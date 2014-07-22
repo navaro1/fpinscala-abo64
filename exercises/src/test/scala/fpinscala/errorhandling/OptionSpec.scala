@@ -144,4 +144,51 @@ class OptionSpec extends FlatSpec with PropertyChecks {
       assertResult(Some(0))(variance(Seq.fill(n)(x)))
     }
   }
+
+  behavior of "4.3 map2"
+
+  it should "work" in {
+    def testMap2(oa: Option[Int], ob: Option[String], expected: Option[Double]) =
+      assertResult(expected)(map2(oa, ob)((a, b) => a + b.toDouble))
+
+    val tests = Table(
+      ("Option[Int]", "Option[String]", "map2(...)"),
+      (None, None, None),
+      (Some(1), None, None),
+      (None, Some("2.3"), None),
+      (Some(1), Some("2.3"), Some(3.3d)))
+    forAll(tests)(testMap2)
+  }
+
+  behavior of "4.4 sequence"
+
+  it should "work" in {
+    def testSequence[A](oas: List[Option[A]], expected: Option[List[A]]) =
+      assertResult(expected)(sequence(oas))
+
+    val tests = Table(
+      ("List[Option[_]]", "sequence(...)"),
+      (Nil, Some(Nil)),
+      (List(None), None),
+      (List(Some(1)), Some(List(1))),
+      (List(Some(1), Some(2)), Some(List(1,2))),
+      (List(Some(1), None, Some(2)), None))
+    forAll(tests)(testSequence)
+  }
+
+  behavior of "4.5 traverse"
+
+  it should "work" in {
+    def testTraverse(as: List[String], expected: Option[List[Int]]) =
+      assertResult(expected)(traverse(as)(a => if (a.toInt % 2 == 0) Some(a.toInt) else None))
+
+    val tests = Table(
+      ("List[String]", "traverse(...)"),
+      (Nil, Some(Nil)),
+      (List("1"), None),
+      (List("2", "3"), None),
+      (List("2", "4"), Some(List(2, 4))))
+    forAll(tests)(testTraverse)
+  }
+
 }
