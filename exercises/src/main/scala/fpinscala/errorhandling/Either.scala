@@ -4,13 +4,29 @@ package fpinscala.errorhandling
 import scala.{Option => _, Either => _, _} // hide std library `Option` and `Either`, since we are writing our own in this chapter
 
 sealed trait Either[+E,+A] {
- def map[B](f: A => B): Either[E, B] = sys.error("todo")
+ def map[B](f: A => B): Either[E, B] = this match {
+   case Right(a) => Right(f(a))
+   case left @ Left(_) => left
+ }
 
- def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = sys.error("todo")
+ def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = this match {
+   case Right(a) => f(a)
+   case left @ Left(_) => left
+ }
 
- def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = sys.error("todo")
+ def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = this match {
+   case right @ Right(_) => right
+   case Left(_) => b
+ }
 
- def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] = sys.error("todo")
+ def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+//   (this, b) match {
+//     case (left @ Left(_), _) => left
+//     case (_, left @ Left(_)) => left
+//     case (Right(a), Right(b)) => Right(f(a, b))
+//   }
+   flatMap(a => b map (b => f(a,b)))
+//   for { a <- this; b1 <- b } yield f(a,b1)
 }
 case class Left[+E](get: E) extends Either[E,Nothing]
 case class Right[+A](get: A) extends Either[Nothing,A]
