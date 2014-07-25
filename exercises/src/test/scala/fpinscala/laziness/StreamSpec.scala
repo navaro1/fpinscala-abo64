@@ -52,7 +52,7 @@ class StreamSpec extends FlatSpec with PropertyChecks {
   it should "for all l: List[_], n: Int ==> Stream(l).take(n).toList == l.take(n)" in {
     forAll("l: List[_]") { l: List[Int] =>
       val size = l.size
-      forAll (Gen.chooseNum(0, size)) { n: Int =>
+      forAll (Gen.chooseNum(0, size) :| "n") { n: Int =>
         assertResult(l.take(n))(Stream(l: _*).take(n).toList)
       }
     }
@@ -75,7 +75,7 @@ class StreamSpec extends FlatSpec with PropertyChecks {
   it should "for all l: List[_], n: Int ==> Stream(l).drop(n).toList == l.drop(n)" in {
     forAll("l: List[_]") { l: List[Int] =>
       val size = l.size
-      forAll (Gen.chooseNum(0, size)) { n: Int =>
+      forAll (Gen.chooseNum(0, size) :| "n") { n: Int =>
         assertResult(l.drop(n))(Stream(l: _*).drop(n).toList)
       }
     }
@@ -243,6 +243,173 @@ class StreamSpec extends FlatSpec with PropertyChecks {
   it should "for all l: List[Int] ==> Stream(l).map(...).toList == l.map(...)" in {
     forAll("l: List[Int]") { l: List[Int] =>
       assertResult(l.flatMap(plusXList))(Stream(l: _*).flatMap(plusXStream).toList)
+    }
+  }
+
+  behavior of "5.8 constant"
+
+  it should "work" in {
+    def testConstant[A](a: A, n: Int, expected: List[A]) =
+      assertResult(expected)(constant(a).take(n).toList)
+
+    val tests = Table(
+      ("a: A", "n", "constant(a).take(n)"),
+      (1, 0, Nil),
+      (1, 1, List(1)),
+      (1, 3, List(1,1,1)),
+      ("a", 2, List("a", "a")))
+    forAll(tests)(testConstant)
+  }
+
+  it should "for all n: Int ==> constant(1).take(n).toList == List.fill(n)(1)" in {
+    forAll(Gen.chooseNum(0, 10) :| "n") { n: Int =>
+      assertResult(List.fill(n)(1))(constant(1).take(n).toList)
+    }
+  }
+
+  behavior of "5.9 from"
+
+  it should "work" in {
+    def testFrom[A](n: Int, i: Int, expected: List[Int]) =
+      assertResult(expected)(from(n).take(i).toList)
+
+    val tests = Table(
+      ("n", "i", "from(n).take(i)"),
+      (1, 0, Nil),
+      (1, 1, List(1)),
+      (1, 3, List(1,2,3)),
+      (3, 2, List(3,4)))
+    forAll(tests)(testFrom)
+  }
+
+  it should "for all n: Int ==> from(n).take(i).toList == List.fill(i)(...)" in {
+    forAll(Gen.chooseNum(0, 10) :| "n") { n: Int =>
+      forAll(Gen.chooseNum(0, 10) :| "i") { i: Int =>
+        var next = n - 1
+        assertResult(List.fill(i){next += 1; next})(from(n).take(i).toList)
+      }
+    }
+  }
+
+  behavior of "5.10 fibs"
+
+  def getFibs(n: Int) = fibs.take(n + 1).toList.last
+
+  it should "work" in {
+    val tests = Table(
+      ("n", "getFibs(n)"),
+      (0, 0), (1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (6, 8), (7, 13))
+    forAll(tests) { (n: Int, expected: Int) =>
+      assertResult(expected)(getFibs(n))
+    }
+  }
+
+  it should "be the sum of the previous two fibs" in {
+    forAll(Gen.chooseNum(2, 100) :| "n") { n: Int =>
+      assertResult(getFibs(n - 1) + getFibs(n - 2))(getFibs(n))
+    }
+  }
+
+  behavior of "5.11 unfold"
+
+  def fibsViaUnfoldN(n: Int) =
+    unfold((0,1,n)){ case (fib0, fib1, n) =>
+      if (n >= 0) Some((fib0, (fib1, fib0 + fib1, n -1)))
+      else None
+    }
+
+  it should "work for fibsViaUnfoldN" in {
+    val tests = Table(
+      ("n", "fibsViaUnfoldN(n).toList"),
+      (0, List(0)), (1, List(0,1)), (2, List(0,1,1)), (3, List(0,1,1,2)), (4, List(0,1,1,2,3)),
+      (5, List(0,1,1,2,3,5)), (6, List(0,1,1,2,3,5,8)), (7, List(0,1,1,2,3,5,8,13)))
+    forAll(tests) { (n: Int, expected: List[Int]) =>
+      assertResult(expected)(fibsViaUnfoldN(n).toList)
+    }
+  }
+
+  behavior of "5.12.1 fibsViaUnfold"
+
+  it should "work" in {
+    val tests = Table(
+      ("n", "fibsViaUnfoldN(n).toList"),
+      (0, List(0)), (1, List(0,1)), (2, List(0,1,1)), (3, List(0,1,1,2)), (4, List(0,1,1,2,3)),
+      (5, List(0,1,1,2,3,5)), (6, List(0,1,1,2,3,5,8)), (7, List(0,1,1,2,3,5,8,13)))
+    forAll(tests) { (n: Int, expected: List[Int]) =>
+      assertResult(expected)(fibsViaUnfold.take(n + 1).toList)
+    }
+  }
+
+  def getFibsViaUnfold(n: Int) = fibsViaUnfold.take(n + 1).toList.last
+
+  it should "be the sum of the previous two fibs" in {
+    forAll(Gen.chooseNum(2, 100) :| "n") { n: Int =>
+      assertResult(getFibsViaUnfold(n - 1) + getFibsViaUnfold(n - 2))(getFibsViaUnfold(n))
+    }
+  }
+
+  behavior of "5.12.2 fromViaUnfold"
+
+  it should "work" in {
+    def testFrom[A](n: Int, i: Int, expected: List[Int]) =
+      assertResult(expected)(fromViaUnfold(n).take(i).toList)
+
+    val tests = Table(
+      ("n", "i", "fromViaUnfold(n).take(i)"),
+      (1, 0, Nil),
+      (1, 1, List(1)),
+      (1, 3, List(1,2,3)),
+      (3, 2, List(3,4)))
+    forAll(tests)(testFrom)
+  }
+
+  it should "for all n: Int ==> fromViaUnfold(n).take(i).toList == List.fill(i)(...)" in {
+    forAll(Gen.chooseNum(0, 10) :| "n") { n: Int =>
+      forAll(Gen.chooseNum(0, 10) :| "i") { i: Int =>
+        var next = n - 1
+        assertResult(List.fill(i){next += 1; next})(fromViaUnfold(n).take(i).toList)
+      }
+    }
+  }
+
+  behavior of "5.12.3 constantViaUnfold"
+
+  it should "work" in {
+    def testConstantViaUnfold[A](a: A, n: Int, expected: List[A]) =
+      assertResult(expected)(constantViaUnfold(a).take(n).toList)
+
+    val tests = Table(
+      ("a: A", "n", "constantViaUnfold(a).take(n)"),
+      (1, 0, Nil),
+      (1, 1, List(1)),
+      (1, 3, List(1,1,1)),
+      ("a", 2, List("a", "a")))
+    forAll(tests)(testConstantViaUnfold)
+  }
+
+  it should "for all n: Int ==> constantViaUnfold(1).take(n).toList == List.fill(n)(1)" in {
+    forAll(Gen.chooseNum(0, 10) :| "n") { n: Int =>
+      assertResult(List.fill(n)(1))(constantViaUnfold(1).take(n).toList)
+    }
+  }
+
+  behavior of "5.12.4 onesViaUnfold"
+
+  it should "work" in {
+    def testOnesViaUnfold[A](n: Int, expected: List[A]) =
+      assertResult(expected)(onesViaUnfold.take(n).toList)
+
+    val tests = Table(
+      ("n", "onesViaUnfold.take(n)"),
+      (0, Nil),
+      (1, List(1)),
+      (3, List(1,1,1)))
+    forAll(tests)(testOnesViaUnfold)
+  }
+
+  it should "for all n: Int ==> onesViaUnfold.take(n).toList == List.fill(n)(1)" in {
+    forAll(Gen.chooseNum(0, 10) :| "n") { n: Int =>
+      assertResult(List.fill(n)(1))(onesViaUnfold.take(n).toList)
     }
   }
 
