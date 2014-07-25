@@ -2,12 +2,12 @@ package fpinscala.datastructures
 
 import scala.{List => SList}
 import org.junit.runner.RunWith
-import org.scalatest.FlatSpec
-import org.scalatest.prop.PropertyChecks
-import List._
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import org.scalatest.FlatSpec
+import org.scalatest.prop.PropertyChecks
+import List._
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ListSpec extends FlatSpec with PropertyChecks {
@@ -17,16 +17,16 @@ class ListSpec extends FlatSpec with PropertyChecks {
     case Cons(h, _) => h
   }
 
-  private implicit def arbList[T](implicit ev: Arbitrary[Array[T]]): Arbitrary[List[T]] =
-//    Arbitrary(arbitrary[Array[T]] map (List(_: _*)))
+  private implicit def arbList[T](implicit ev: Arbitrary[Seq[T]]): Arbitrary[List[T]] =
+//    Arbitrary(arbitrary[Seq[T]] map (List(_: _*)))
     Arbitrary(for {
-      as <- arbitrary[Array[T]]
+      as <- arbitrary[Seq[T]]
     } yield List(as: _*))
 
-  private def arbListTuple[T](implicit ev: Arbitrary[Array[T]]): Arbitrary[(List[T],SList[T])] =
+  private def arbListTuple[T](implicit ev: Arbitrary[SList[T]]): Arbitrary[(List[T],SList[T])] =
     Arbitrary(for {
-      as <- arbitrary[Array[T]]
-    } yield (List(as: _*), as.toList))
+      as <- arbitrary[SList[T]]
+    } yield (List(as: _*), as))
 
   private def toList[A](l: SList[A]) = List(l: _*)
 

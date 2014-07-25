@@ -1,6 +1,9 @@
 package fpinscala.laziness
 
 import Stream._
+import scala.collection.mutable.ListBuffer
+import scala.annotation.tailrec
+
 trait Stream[+A] {
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
@@ -17,13 +20,64 @@ trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
-  def take(n: Int): Stream[A] = sys.error("todo")
 
-  def drop(n: Int): Stream[A] = sys.error("todo")
+  def toList: List[A] = {
+//    foldRight(Nil:List[A])(_ :: _) }
+    val buf = ListBuffer[A]()
+    @tailrec
+    def loop(stream: Stream[A]): List[A] =  stream match {
+      case Cons(h, t) => { buf += h() ; loop(t()) }
+      case _ => buf.toList
+    }
+    loop(this)
+  }
 
-  def takeWhile(p: A => Boolean): Stream[A] = sys.error("todo")
+  def take(n: Int): Stream[A] = {
+    if (n > 0) this match {
+      case Cons(h, t) => cons(h(), t().take(n-1))
+      case _ => Stream.empty
+    }
+    else Stream.empty
+  }
 
-  def forAll(p: A => Boolean): Boolean = sys.error("todo")
+  // must be strict
+  def drop(n: Int): Stream[A] = {
+    @tailrec
+    def loop(as: Stream[A], n: Int): Stream[A] = {
+      if (n <= 0) as
+      else as match {
+        case Cons(h, t) => loop(t(), n - 1)
+        case _ => Stream()
+      }
+    }
+    loop(this, n)
+  }
+
+  def takeWhile(p: A => Boolean): Stream[A] = this match {
+    case Cons(h, t) if p(h()) => cons(h(), t().takeWhile(p))
+    case _ => Stream.empty
+  }
+
+  def forAll(p: A => Boolean): Boolean =
+    foldRight(true)((a, b) => p(a) && b)
+
+  def takeWhileViaFoldRight(p: A => Boolean): Stream[A] =
+    foldRight(empty[A])((a,b) => if (p(a)) cons(a, b) else Stream.empty)
+
+  def headOption: Option[A] =
+    foldRight(None: Option[A])((h,_) => Some(h))
+
+  def map[B](f: A => B): Stream[B] =
+    foldRight(empty[B])((a,b) => cons(f(a), b))
+
+  def filter(p: A => Boolean): Stream[A] =
+    foldRight(empty[A])((a,b) => if (p(a)) cons(a, b) else b)
+
+  def append[B>:A](other: Stream[B]): Stream[B] =
+    foldRight(other)(cons(_, _))
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((a,b) => f(a) append b)
 
   def startsWith[A](s: Stream[A]): Boolean = sys.error("todo")
 }
