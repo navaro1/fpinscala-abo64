@@ -413,4 +413,89 @@ class StreamSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "5.13.1 mapViaUnfold"
+
+  it should "work" in {
+    def testMapViaUnfold(as: Stream[_], expected: List[String]) =
+      assertResult(expected)(as.mapViaUnfold(plusX).toList)
+
+    val tests = Table(
+      ("as: Stream[_]", "as.map(...)"),
+      (Stream(), Nil),
+      (Stream(1, 2, 3), List("1x", "2x", "3x")),
+      (Stream("a", "b", "c"), List("ax", "bx", "cx")))
+    forAll(tests)(testMapViaUnfold)
+  }
+
+  it should "for all l: List[Int] ==> Stream(l).mapViaUnfold(...).toList == l.map(...)" in {
+    forAll("l: List[Int]") { l: List[Int] =>
+      assertResult(l.map(plusX))(Stream(l: _*).mapViaUnfold(plusX).toList)
+    }
+  }
+
+  behavior of "5.13.2 takeViaUnfold"
+
+  it should "work" in {
+    def testTakeViaUnfold[A](as: Stream[A], n: Int, expected: List[A]) =
+      assertResult(expected)(as.takeViaUnfold(n).toList)
+
+    val tests = Table(
+      ("as: Stream[_]", "n", "as.takeViaUnfold(n)"),
+      (Stream(), 1, Nil),
+      (Stream(0, 1, 2), 2, List(0, 1)),
+      (Stream("a", "b"), 3, List("a", "b")))
+    forAll(tests)(testTakeViaUnfold)
+  }
+
+  it should "for all l: List[_], n: Int ==> Stream(l).takeViaUnfold(n).toList == l.take(n)" in {
+    forAll("l: List[_]") { l: List[Int] =>
+      val size = l.size
+      forAll (Gen.chooseNum(0, size) :| "n") { n: Int =>
+        assertResult(l.take(n))(Stream(l: _*).takeViaUnfold(n).toList)
+      }
+    }
+  }
+
+  behavior of "5.13.3 takeWhileViaUnfold"
+
+  it should "work" in {
+    def testTakeWhileViaUnfold(as: Stream[Int], expected: List[Int]) = assertResult(expected)(as.takeWhileViaUnfold(even).toList)
+
+    val tests = Table(
+      ("as: Stream[Int]", "as.takeWhileViaUnfold(even)"),
+      (Stream(), Nil),
+      (Stream(0, 2, 3), List(0, 2)),
+      (Stream(1, 2), Nil))
+    forAll(tests)(testTakeWhileViaUnfold)
+  }
+
+  it should "for all l: List[Int] ==> Stream(l).takeWhileViaUnfold(even).toList == l.takeWhile(even)" in {
+    forAll("l: List[Int]") { l: List[Int] =>
+      assertResult(l.takeWhile(even))(Stream(l: _*).takeWhileViaUnfold(even).toList)
+    }
+  }
+
+  behavior of "5.13.4 zipWith"
+
+  it should "work" in {
+    def testZipWith(as: Stream[Int], as2: Stream[Int], expected: List[Int]) =
+      assertResult(expected)(as.zipWith(as2)(_ + _).toList)
+
+    val tests = Table(
+      ("as: Stream[Int]", "as2: Stream[Int]", "as.zipWith(as2)(_ + _)"),
+      (Stream(), Stream(), Nil),
+      (Stream(), Stream(0, 2, 3), Nil),
+      (Stream(0, 2, 3), Stream(), Nil),
+      (Stream(0, 2, 3), Stream(0, 2, 3), List(0, 4, 6)),
+      (Stream(1, 2), Stream(0, 2, 3), List(1, 4)))
+    forAll(tests)(testZipWith)
+  }
+
+  it should "for all l1,l2: List[Int] ==> Stream(l1).zipWith(Stream(l2))(_+_).toList == l1.zipWith(l2)(_+_)" in {
+    val plus = (a:Int, b:Int) => a + b
+    forAll("l1: List[Int]", "ls: List[Int]") { (l1: List[Int], l2: List[Int]) =>
+      assertResult(l1.zip(l2).map(plus.tupled))(Stream(l1: _*).zipWith(Stream(l2: _*))(plus).toList)
+    }
+  }
+
 }

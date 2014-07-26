@@ -40,6 +40,12 @@ trait Stream[+A] {
     else Stream.empty
   }
 
+  def takeViaUnfold[B](n: Int): Stream[A] =
+    unfold((this,n)) {
+      case (Cons(h, t), n) if (n > 0) => Some((h()), (t(), n-1))
+      case _ => None
+    }
+
   // must be strict
   def drop(n: Int): Stream[A] = {
     @tailrec
@@ -58,6 +64,12 @@ trait Stream[+A] {
     case _ => Stream.empty
   }
 
+  def takeWhileViaUnfold[B](p: A => Boolean): Stream[A] =
+    unfold(this) {
+      case Cons(h, t) if p(h()) => Some((h()), t())
+      case _ => None
+    }
+
   def forAll(p: A => Boolean): Boolean =
     foldRight(true)((a, b) => p(a) && b)
 
@@ -70,6 +82,12 @@ trait Stream[+A] {
   def map[B](f: A => B): Stream[B] =
     foldRight(empty[B])((a,b) => cons(f(a), b))
 
+  def mapViaUnfold[B](f: A => B): Stream[B] =
+    unfold(this) {
+      case Cons(h, t) => Some((f(h()), t()))
+      case _ => None
+    }
+
   def filter(p: A => Boolean): Stream[A] =
     foldRight(empty[A])((a,b) => if (p(a)) cons(a, b) else b)
 
@@ -78,6 +96,12 @@ trait Stream[+A] {
 
   def flatMap[B](f: A => Stream[B]): Stream[B] =
     foldRight(empty[B])((a,b) => f(a) append b)
+
+  def zipWith[B,C](s2: Stream[B])(f: (A,B) => C): Stream[C] =
+    unfold((this,s2)) {
+      case (Cons(h,t),Cons(h2,t2)) => Some((f(h(),h2()), (t(), t2())))
+      case _ => None
+    }
 
   def startsWith[A](s: Stream[A]): Boolean = sys.error("todo")
 }
