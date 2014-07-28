@@ -2,10 +2,10 @@ package fpinscala.state
 
 import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
+import org.scalacheck.Gen
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 import RNG._
-import org.scalacheck.Gen
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StateSpec extends FlatSpec with PropertyChecks with Matchers {
@@ -225,6 +225,68 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
 
   it should "return a value >= 0 and < 1 for all nextInt values" in {
     testProperty(testMap2ViaFlatMap)
+  }
+
+  behavior of "6.10.1 State.unit"
+
+  def testStateUnit(n: Int) = {
+    val (i, s) = State.unit(n).run(n)
+    assertResult(n)(i)
+    assertResult(n)(s)
+  }
+
+  it should "always result in the value that was passed in" in {
+    testProperty(testStateUnit)
+  }
+
+  behavior of "6.10.2 State.map"
+
+  def createState(n: Int) = State[Int,Int](s => (n, s + 1))
+
+  def testStateMap(n: Int) = {
+    val (i, s) = createState(n).map(_.toString).run(n)
+    assertResult(n.toString)(i)
+    assertResult(n + 1)(s)
+  }
+
+  it should "always result in (n.toString,n+1)" in {
+    testProperty(testStateMap)
+  }
+
+  behavior of "6.10.2 State.map2"
+
+  def testStateMap2(n: Int) = {
+    val (i, s) = createState(n).map2(createState(n))(_ + _).run(n)
+    assertResult(n * 2)(i)
+    assertResult(n + 2)(s)
+  }
+
+  it should "always result in (n*2,n+2)" in {
+    testProperty(testStateMap2)
+  }
+
+  behavior of "6.10.4 State.flatMap"
+
+  def testStateFlatMap(n: Int) = {
+    val (i, s) = createState(n).flatMap(createState).run(n)
+    assertResult(n)(i)
+    assertResult(n + 2)(s)
+  }
+
+  it should "always result in (n,n+2)" in {
+    testProperty(testStateFlatMap)
+  }
+
+  behavior of "6.10.5 State.sequence"
+
+  def testStateSequence(n: Int) = {
+    val (i, s) = State.sequence(List(createState(n), createState(n))).run(n)
+    assertResult(List(n,n))(i)
+    assertResult(n + 2)(s)
+  }
+
+  it should "always result in (List(n,n),n+2)" in {
+    testProperty(testStateSequence)
   }
 
 }
