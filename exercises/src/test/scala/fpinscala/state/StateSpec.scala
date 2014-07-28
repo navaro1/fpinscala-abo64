@@ -44,7 +44,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
 
   behavior of "6.2 double"
 
-  def testDoubleRange(d: Double) = d should (be >= 0d and be < 1d)
+  def testDoubleRange(d: Double, offset: Int = 0) = d should (be >= 0d + offset and be < 1d + offset)
 
   def testDouble(n: Int) = testDoubleRange(double(TestRNG(n))._1)
 
@@ -129,7 +129,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   }
 
   it should "return a value >= 0 and < 1 for all nextInt values" in {
-    testCornerCases(testDoubleViaMap)
+    testProperty(testDoubleViaMap)
   }
 
   behavior of "6.6 map2"
@@ -144,7 +144,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   }
 
   it should "return a value >= 0 and < 1 for all nextInt values" in {
-    testCornerCases(testMap2)
+    testProperty(testMap2)
   }
 
   behavior of "6.7 sequence"
@@ -165,6 +165,66 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     forAll(Gen.chooseNum(0, 1) :| "count: Int") { count: Int =>
       testProperty(testSequence(count))
     }
+  }
+
+  behavior of "6.8.1 flatMap"
+
+  def testFlatMap(n: Int) = {
+    val (d,_) = flatMap(double)(rd => rng => (42 + rd, rng))(TestRNG(n))
+    testDoubleRange(d, 42)
+  }
+
+  it should "work for corner cases" in {
+    testCornerCases(testFlatMap)
+  }
+
+  it should "return a value >= 42.0 and < 43.0 for all nextInt values" in {
+    testProperty(testFlatMap)
+  }
+
+  behavior of "6.8.2 nonNegativeLessThan"
+
+  def testNonNegativeLessThan(n: Int) = {
+    val (i,_) = nonNegativeLessThan(42)(TestRNG(n))
+    i should (be >= 0 and be < 42)
+  }
+
+  it should "work for corner cases" in {
+    testCornerCases(testNonNegativeLessThan)
+  }
+
+  it should "return a value >= 0 and < 42 for all nextInt values" in {
+    testProperty(testNonNegativeLessThan)
+  }
+
+  behavior of "6.9.1 mapViaFlatMap"
+
+  def testMapViaFlatMap(n: Int) = {
+    val (d, _) = mapViaFlatMap(double)(_ + 42)(TestRNG(n))
+    testDoubleRange(d, 42)
+  }
+
+  it should "work for corner cases" in {
+    testCornerCases(testMapViaFlatMap)
+  }
+
+  it should "return a value >= 0 and < 1 for all nextInt values" in {
+    testProperty(testMapViaFlatMap)
+  }
+
+  behavior of "6.9.2 map2ViaFlatMap"
+
+  def testMap2ViaFlatMap(n: Int) = {
+    val (d, _) = map2ViaFlatMap(double, double)(_ * _)(TestRNG(n))
+    testDoubleRange(d)
+  }
+
+  it should "work for corner cases" in {
+    testCornerCases(testMap2ViaFlatMap)
+  }
+
+  it should "return a value >= 0 and < 1 for all nextInt values" in {
+    testProperty(testMap2ViaFlatMap)
   }
 
 }
