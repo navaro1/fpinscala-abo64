@@ -40,7 +40,7 @@ trait Stream[+A] {
     else Stream.empty
   }
 
-  def takeViaUnfold[B](n: Int): Stream[A] =
+  def takeViaUnfold(n: Int): Stream[A] =
     unfold((this,n)) {
       case (Cons(h, t), n) if (n > 0) => Some((h()), (t(), n-1))
       case _ => None
@@ -64,7 +64,7 @@ trait Stream[+A] {
     case _ => Stream.empty
   }
 
-  def takeWhileViaUnfold[B](p: A => Boolean): Stream[A] =
+  def takeWhileViaUnfold(p: A => Boolean): Stream[A] =
     unfold(this) {
       case Cons(h, t) if p(h()) => Some((h()), t())
       case _ => None
