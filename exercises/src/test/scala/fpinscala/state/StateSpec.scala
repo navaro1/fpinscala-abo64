@@ -7,6 +7,8 @@ import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 import RNG._
 import Candy._
+import org.scalacheck.Commands
+import org.scalatest.prop.Checkers
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StateSpec extends FlatSpec with PropertyChecks with Matchers {
@@ -322,7 +324,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
           List[Input](Coin), Machine(false, 1, 0), Machine(false, 1, 0), (0,1)),
       ("rule 4a: turn knob on machine w/o candy -> no effect",
           List[Input](Turn), Machine(false, 0, 0), Machine(false, 0, 0), (0,0)),
-      ("rule 3b: insert coin into machine w/o candy -> no effect",
+      ("rule 4b: insert coin into machine w/o candy -> no effect",
           List[Input](Coin), Machine(true, 0, 0), Machine(true, 0, 0), (0,0))
     )
     forAll(ruleTests) {
@@ -335,10 +337,62 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
 
   it should "behave as the example in the book describes" in {
     val buyOneCandy = List[Input](Coin, Turn)
-    def buyCandy(times: Int): List[Input] = (List.fill(times)(buyOneCandy)).flatten
+    def buyCandies(times: Int): List[Input] = (List.fill(times)(buyOneCandy)).flatten
 
     assertResult(((14,1), Machine(true, 1, 14)), "see example in the book") {
-        simulateMachine(buyCandy(4)).run(Machine(true, 5, 10))
+        simulateMachine(buyCandies(4)).run(Machine(true, 5, 10))
     }
+  }
+
+  it should "have the right state transitions" in {
+    object CandyMachineSpecification extends Commands {
+      var currentMachine: Machine = _
+
+      case class State(locked: Boolean, candies: Int, coins: Int)
+
+      private def asState(machine: Machine) = State(machine.locked, machine.candies, machine.coins)
+      override def initialState = {
+        currentMachine = Machine(true, 10, 0)
+        asState(currentMachine)
+      }
+
+      case object InsertCoin extends Command {
+        postConditions += {
+          case (s0, s1, r:(Int,Int)) =>
+            r._1 == s1.coins && r._2 == s1.candies &&
+            s0.candies >= 0 && s0.candies == s1.candies && s0.coins <= s1.coins
+          case _ => false
+        }
+        override def run(s: State) = {
+          val (ret, nextMachine) = simulateMachine(List[Input](Coin)).run(currentMachine)
+          currentMachine = nextMachine
+          ret
+        }
+        override def nextState(s: State) = {
+          if (s.candies < 1) s else State(false, s.candies, s.coins + 1)
+        }
+      }
+
+      case object TurnKnob extends Command {
+        postConditions += {
+          case (s0, s1, r:(Int,Int)) =>
+            r._1 == s1.coins && r._2 == s1.candies &&
+            s0.candies >= 0 && s0.candies >= s1.candies && s1.candies >= 0 && s0.coins == s1.coins
+          case _ => false
+        }
+        override def run(s: State) = {
+          val (ret, nextMachine) = simulateMachine(List[Input](Turn)).run(currentMachine)
+          currentMachine = nextMachine
+          ret
+        }
+        override def nextState(s: State) = {
+          if (s.candies < 1) s else State(true, s.candies - 1, s.coins)
+        }
+      }
+
+      override def genCommand(s: State): Gen[Command] = Gen.oneOf(InsertCoin, TurnKnob)
+    }
+
+    Checkers.check(CandyMachineSpecification)
   }
 }
