@@ -6,6 +6,7 @@ import org.scalacheck.Gen
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 import RNG._
+import Candy._
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StateSpec extends FlatSpec with PropertyChecks with Matchers {
@@ -230,9 +231,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   behavior of "6.10.1 State.unit"
 
   def testStateUnit(n: Int) = {
-    val (i, s) = State.unit(n).run(n)
-    assertResult(n)(i)
-    assertResult(n)(s)
+    assertResult((n, 42))(State.unit(n).run(42))
   }
 
   it should "always result in the value that was passed in" in {
@@ -247,6 +246,10 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     val (i, s) = createState(n).map(_.toString).run(n)
     assertResult(n.toString)(i)
     assertResult(n + 1)(s)
+  }
+
+  it should "work" in {
+    assertResult((3, 42))(State.unit(1).map(_ + 2).run(42))
   }
 
   it should "always result in (n.toString,n+1)" in {
@@ -303,4 +306,28 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testProperty(testStateSequence)
   }
 
+  behavior of "6.11 simulateMachine"
+
+  it should "follow the rules" in {
+    val ruleTests = Table(
+      ("rule",
+         "inputs",          "Machine before",    "Machine after",       "expected result"),
+      ("rule 1: insert coin into locked machine w/ candy -> unlock",
+          List[Input](Coin), Machine(true, 1, 0), Machine(false, 1, 1), (1,1)),
+      ("rule 2: turn knob on unlocked machine -> dispense candy and lock",
+          List[Input](Turn), Machine(false, 1, 0), Machine(true, 0, 0), (0,0)),
+      ("rule 3a: turn knob on locked machine -> no effect",
+          List[Input](Turn), Machine(true, 1, 0), Machine(true, 1, 0), (0,1)),
+      ("rule 3b: insert coin into unlocked machine -> no effect",
+          List[Input](Coin), Machine(false, 1, 0), Machine(false, 1, 0), (0,1)),
+      ("rule 4a: turn knob on machine w/o candy -> no effect",
+          List[Input](Turn), Machine(false, 0, 0), Machine(false, 0, 0), (0,0)),
+      ("rule 3b: insert coin into machine w/o candy -> no effect",
+          List[Input](Coin), Machine(true, 0, 0), Machine(true, 0, 0), (0,0))
+    )
+    forAll(ruleTests) {
+      (rule: String, inputs: List[Input], machineBefore: Machine, machineAfter: Machine, expected: (Int,Int)) =>
+        assertResult((expected, machineAfter), rule)(simulateMachine(inputs).run(machineBefore))
+    }
+  }
 }
