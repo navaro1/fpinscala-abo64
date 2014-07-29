@@ -327,7 +327,18 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     )
     forAll(ruleTests) {
       (rule: String, inputs: List[Input], machineBefore: Machine, machineAfter: Machine, expected: (Int,Int)) =>
-        assertResult((expected, machineAfter), rule)(simulateMachine(inputs).run(machineBefore))
+        assertResult((expected, machineAfter), rule) {
+          simulateMachine(inputs).run(machineBefore)
+        }
+    }
+  }
+
+  it should "behave as the example in the book describes" in {
+    val buyOneCandy = List[Input](Coin, Turn)
+    def buyCandy(times: Int): List[Input] = (List.fill(times)(buyOneCandy)).flatten
+
+    assertResult(((14,1), Machine(true, 1, 14)), "see example in the book") {
+        simulateMachine(buyCandy(4)).run(Machine(true, 5, 10))
     }
   }
 }
