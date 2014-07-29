@@ -277,6 +277,20 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testProperty(testStateFlatMap)
   }
 
+  it should "make for-comprehension work" in {
+    def testForComprehension(n: Int) = {
+      val s1 = createState(n)
+      val s2 = createState(n)
+      val s3 = for {
+        n1 <- s1
+        n2 <- s2
+      } yield(n1 + n2)
+      val (n4, s4) = s3.run(n)
+    assertResult(n)(n4)
+    assertResult(n + 2)(s4)
+    }
+  }
+
   behavior of "6.10.5 State.sequence"
 
   def testStateSequence(n: Int) = {
