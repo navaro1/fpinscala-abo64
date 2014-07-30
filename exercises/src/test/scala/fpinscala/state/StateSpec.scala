@@ -351,6 +351,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
       case class State(locked: Boolean, candies: Int, coins: Int)
 
       private def asState(machine: Machine) = State(machine.locked, machine.candies, machine.coins)
+
       override def initialState = {
         currentMachine = Machine(true, 10, 0)
         asState(currentMachine)
