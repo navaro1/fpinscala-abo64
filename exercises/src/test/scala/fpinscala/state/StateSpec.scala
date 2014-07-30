@@ -369,7 +369,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
           ret
         }
         override def nextState(s: State) = {
-          if (s.candies < 1) s else State(false, s.candies, s.coins + 1)
+          if (s.candies < 1 || !s.locked) s else State(false, s.candies, s.coins + 1)
         }
       }
 
@@ -386,7 +386,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
           ret
         }
         override def nextState(s: State) = {
-          if (s.candies < 1) s else State(true, s.candies - 1, s.coins)
+          if (s.candies < 1 || s.locked) s else State(true, s.candies - 1, s.coins)
         }
       }
 
