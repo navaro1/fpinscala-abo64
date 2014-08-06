@@ -96,11 +96,15 @@ object List { // `List` companion object. Contains functions for creating and wo
   }
 
   // Numeric makes it work for all numeric types, not just Int
-  def sumViaFoldLeft[T](nums: List[T])(implicit ev: Numeric[T]): T =
+  def sumViaFoldLeft[T: Numeric](nums: List[T]): T = {
+    val ev = implicitly[Numeric[T]]
     foldLeft(nums, ev.zero)((acc,n) => ev.plus(acc, n))
+  }
 
-  def productViaFoldLeft[T](nums: List[T])(implicit ev: Numeric[T]): T =
+  def productViaFoldLeft[T: Numeric](nums: List[T]): T = {
+    val ev = implicitly[Numeric[T]]
     foldLeft(nums, ev.one)((acc,n) => ev.times(acc, n))
+  }
 
   def lengthViaFoldLeft(l: List[_]): Int =
     foldLeft(l, 0)((acc,_) => acc + 1)
@@ -117,8 +121,10 @@ object List { // `List` companion object. Contains functions for creating and wo
   def concat[A](l: List[List[A]]): List[A] =
     foldRight(l, Nil:List[A])(append)
 
-  def add1[T](nums: List[T])(implicit ev: Numeric[T]): List[T] =
+  def add1[T: Numeric](nums: List[T]): List[T] = {
+    val ev = implicitly[Numeric[T]]
     foldRight(nums, Nil:List[T])((n,acc) => Cons(ev.plus(n, ev.one), acc))
+  }
 
   def doubleToString(l: List[Double]): List[String] = 
     foldRight(l, Nil:List[String])((h,t) => Cons(h.toString,t))
