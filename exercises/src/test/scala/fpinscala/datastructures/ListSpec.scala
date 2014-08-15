@@ -286,6 +286,60 @@ class ListSpec extends FlatSpec with PropertyChecks {
     forAll(tests)(testReverse)
   }
 
+  behavior of "3.13.1 foldLeftViaFoldRight"
+
+  it should "work for sum" in {
+    def testSumFoldLeftViaFoldRight(l: List[Int], expected: Int) =
+      assertResult(expected)(foldLeftViaFoldRight(l, 0)(_ + _))
+
+    val tests = Table(
+      ("l", "foldLeftViaFoldRight(l, 0)(_ + _)"),
+      (Nil, 0),
+      (List(1), 1),
+      (List(1,2,3), 6))
+    forAll(tests)(testSumFoldLeftViaFoldRight)
+  }
+
+  it should "work for append" in {
+    def testAppendFoldLeftViaFoldRight[A](l1: List[A], l2: List[A], expected: List[A]) =
+      assertResult(expected)(foldLeftViaFoldRight(reverse(l1), l2)((t,h) => Cons(h,t)))
+
+    val tests = Table(
+      ("l1", "l2", "foldLeftViaFoldRight(reverse(l1), l2)((t,h) => Cons(h,t))"),
+      (Nil, Nil, Nil),
+      (List(1), Nil, List(1)),
+      (Nil, List(1), List(1)),
+      (List(1,2), List(3,4), List(1,2,3,4)))
+    forAll(tests)(testAppendFoldLeftViaFoldRight)
+  }
+
+  behavior of "3.13.2 foldRightViaFoldLeft"
+
+  it should "work for sum" in {
+    def testSumFoldRightViaFoldLeft(l: List[Int], expected: Int) =
+      assertResult(expected)(foldRightViaFoldLeft(l, 0)(_ + _))
+
+    val tests = Table(
+      ("l", "foldRightViaFoldLeft(l, 0)(_ + _)"),
+      (Nil, 0),
+      (List(1), 1),
+      (List(1,2,3), 6))
+    forAll(tests)(testSumFoldRightViaFoldLeft)
+  }
+
+  it should "work for append" in {
+    def testAppendFoldRightViaFoldLeft[A](l1: List[A], l2: List[A], expected: List[A]) =
+      assertResult(expected)(foldRightViaFoldLeft(reverse(l1), l2)((h,t) => Cons(h,t)))
+
+    val tests = Table(
+      ("l1", "l2", "foldRightViaFoldLeft(reverse(l1), l2)((h,t) => Cons(h,t))"),
+      (Nil, Nil, Nil),
+      (List(1), Nil, List(1)),
+      (Nil, List(1), List(1)),
+      (List(1,2), List(3,4), List(1,2,3,4)))
+    forAll(tests)(testAppendFoldRightViaFoldLeft)
+  }
+
   behavior of "3.14.1 appendViaFoldLeft"
 
   it should "be ismorphic to append" in {

@@ -10,4 +10,5 @@ project.vim
 .classpath
 .cache
 .project
-
+.worksheet/
+exercises/Worksheet.sc
