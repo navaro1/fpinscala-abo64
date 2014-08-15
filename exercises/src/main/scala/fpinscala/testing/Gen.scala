@@ -38,20 +38,29 @@ object Prop {
 }
 
 object Gen {
-  def unit[A](a: => A): Gen[A] = ???
+  def unit[A](a: => A): Gen[A] =
+    Gen(State.unit(a))
 
   def choose(start: Int, stopExclusive: Int): Gen[Int] = {
-//    def run(rng: RNG): (Int, RNG) = {
-//      val (i, r) = RNG.nonNegativeInt(rng)
-//      i % math.abs(stopExclusive - start)
-//    }
-    def loop(r: RNG): (Int, RNG) = {
-      val (i, r2) = r.nextInt
-      if (i >= start && i < stopExclusive) (i, r2) else loop(r2)
+    def run(rng: RNG): (Int, RNG) = {
+      val (i, r) = RNG.nonNegativeInt(rng)
+      val result = (i % math.abs(stopExclusive - start)) + start
+      (result, r)
     }
-    val sample = State[RNG, Int](loop)
+    val sample = State[RNG, Int](run)
+//    def loop(r: RNG): (Int, RNG) = {
+//      val (i, r2) = r.nextInt
+//      if (i >= start && i < stopExclusive) (i, r2) else loop(r2)
+//    }
+//    val sample = State[RNG, Int](loop)
     Gen[Int](sample)
   }
+
+  def boolean: Gen[Boolean] =
+    Gen(State(RNG.boolean))
+
+  def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
+    Gen(State.sequence(List.fill(n)(g.sample)))
 }
 
 case class Gen[+A](sample: State[RNG,A]) {
