@@ -60,11 +60,24 @@ object Gen {
   def boolean: Gen[Boolean] =
     Gen(State(RNG.boolean))
 
+  def double: Gen[Double] =
+    Gen(State(RNG.double))
+
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(g.sample)))
 
   def stringN(n: Int): Gen[String] =
     listOfN(n, choose(0,127)).map((_:List[Int]).map(_.toChar).mkString)
+
+  def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
+    Gen.boolean flatMap {b => if (b) g1 else g2}
+
+  def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] = {
+    /* The probability we should pull from `g1`. */
+    val g1Threshold = g1._2.abs / (g1._2.abs + g2._2.abs)
+
+    Gen.double flatMap {d => if (d < g1Threshold) g1._1 else g2._1}
+  }
 }
 
 case class Gen[+A](sample: State[RNG,A]) {

@@ -88,7 +88,7 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
 
   it should "have an equal distribution" in {
     val trues = Seq.fill(100)(Gen.boolean.get).filter(x => x)
-    assert(math.abs(trues.size - 50) <= 10)
+    assert((trues.size - 50).abs <= 10)
   }
 
   behavior of "8.5.3 Gen.listOfN"
@@ -122,6 +122,24 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   it should "work" in {
     forAll(between0And100) { n =>
       assert(List.fill(n)("X") == Gen.unit("X").listOfN(Gen.unit(n)).get)
+    }
+  }
+
+  behavior of "8.7 Gen.union"
+
+  it should "have an equal distribution" in {
+    val booleans = Gen.union(Gen.unit(true), Gen.unit(false))
+    val trues = Seq.fill(100)(booleans.get).filter(x => x)
+    assert((trues.size - 50).abs <= 10)
+  }
+
+  behavior of "8.8 Gen.weighted"
+
+  it should "have the required distribution" in {
+    forAll(between0And100) { n =>
+      val booleans = Gen.weighted((Gen.unit(true), n), (Gen.unit(false), 100 - n))
+      val trues = Seq.fill(100)(booleans.get).filter(x => x)
+      assert((trues.size - n).abs <= 15)
     }
   }
 }
