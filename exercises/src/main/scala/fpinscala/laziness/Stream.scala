@@ -103,6 +103,9 @@ trait Stream[+A] {
       case _ => None
     }
 
+  def zip[B](s2: Stream[B]): Stream[(A,B)] = 
+    zipWith(s2)((_,_))
+
   def startsWith[A](s: Stream[A]): Boolean = sys.error("todo")
 }
 case object Empty extends Stream[Nothing]

@@ -7,6 +7,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
 import fpinscala.state.RNG
 import org.scalatest.BeforeAndAfterEach
+import Prop._
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
@@ -14,11 +15,15 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   var rng: RNG = _
 
   implicit class TestGenOps[A](gen: Gen[A]) {
-    def get = {
+    def get: A = {
       val (a, nextRng) = gen.sample.run(rng)
       rng = nextRng
       a
     }
+  }
+
+  implicit class TestPropOps(prop: Prop) {
+    def get: Result = prop.run(1, rng)
   }
 
   override def beforeEach =
@@ -46,12 +51,12 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     prop.check
   }
 
-  behavior of "8.3 Prop.&&"
+  behavior of "8.3 Prop0.&&"
 
   it should "work" in {
-    def asProp(b: Boolean): Prop0 = new Prop0 {override def check = b}
-    def testAnd[A,B](check1: Boolean, check2: Boolean, expected: Boolean) =
-      assertResult(expected)((asProp(check1) && asProp(check2)).check)
+    def asProp0(b: Boolean): Prop0 = new Prop0 {override def check = b}
+    def testAnd(check1: Boolean, check2: Boolean, expected: Boolean) =
+      assertResult(expected)((asProp0(check1) && asProp0(check2)).check)
 
     val tests = Table(
       ("prop1.check", "prop2.check", "(prop1 && prop2).check"),
@@ -142,4 +147,41 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       assert((trues.size - n).abs <= 15)
     }
   }
+
+  behavior of "8.9.1 Prop.&&"
+
+  it should "work" in {
+    def asProp(b: Boolean, msg: String = "bollocks"): Prop =
+      Prop((_,_) => if (b) Passed else Falsified(msg, 1))
+    def testAnd(check1: Boolean, check2: Boolean, expected: Boolean, msg: String) =
+      assertResult(asProp(expected, msg).get)((asProp(check1) && asProp(check2)).get)
+
+    val tests = Table(
+      ("prop1.result", "prop2.result", "(prop1 && prop2).result", "msg"),
+      (true, true, true, ""),
+      (true, false, false, "bollocks"),
+      (false, true, false, "bollocks"),
+      (false, false, false, "bollocks")
+    )
+    forAll(tests)(testAnd)
+  }
+
+  behavior of "8.9.2 Prop.||"
+
+  it should "work" in {
+    def asProp(b: Boolean, msg: String = "bollocks"): Prop =
+      Prop((_,_) => if (b) Passed else Falsified(msg, 1))
+    def testOr(check1: Boolean, check2: Boolean, expected: Boolean, msg: String) =
+      assertResult(asProp(expected, msg).get)((asProp(check1) || asProp(check2)).get)
+
+    val tests = Table(
+      ("prop1.result", "prop2.result", "(prop1 || prop2).result", "msg"),
+      (true, true, true, ""),
+      (true, false, true, "bollocks"),
+      (false, true, true, "bollocks"),
+      (false, false, false, "bollocks\nbollocks")
+    )
+    forAll(tests)(testOr)
+  }
+
 }
