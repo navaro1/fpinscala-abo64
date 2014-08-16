@@ -21,9 +21,8 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     }
   }
 
-  override def beforeEach = {
+  override def beforeEach =
     rng = RNG.Simple(0)
-  }
 
   behavior of "8.1 List.sum"
 
@@ -80,8 +79,8 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   behavior of "8.5.1 Gen.unit"
 
   it should "always return the same object" in {
-    forAll("any") { a: Int =>
-      assertResult(a)(Gen.unit(a).get)
+    forAll("a") { a: Int =>
+      assert(a == Gen.unit(a).get)
     }
   }
 
@@ -94,9 +93,35 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
 
   behavior of "8.5.3 Gen.listOfN"
 
+  val between0And100 = SCGen.chooseNum(0, 100) label "n"
+
   it should "generate a list of n elements" in {
-    forAll(SCGen.chooseNum(0, 100) label "n") { n =>
+    forAll(between0And100) { n =>
       assert(Gen.listOfN(n, Gen.unit(0)).get.size == n)
+    }
+  }
+
+  behavior of "8.6.1 Gen.map"
+
+  it should "work" in {
+    forAll("a") { a: Int =>
+      assert(a.toString == Gen.unit(a).map(_.toString).get)
+    }
+  }
+
+  behavior of "8.6.2 Gen.flatMap"
+
+  it should "work" in {
+    forAll("a") { a: Int =>
+      assert(a == Gen.unit(a).flatMap(Gen.unit(_)).get)
+    }
+  }
+
+  behavior of "8.6.3 Gen.listOfN"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert(List.fill(n)("X") == Gen.unit("X").listOfN(Gen.unit(n)).get)
     }
   }
 }

@@ -42,6 +42,7 @@ object Gen {
     Gen(State.unit(a))
 
   def choose(start: Int, stopExclusive: Int): Gen[Int] = {
+//    Gen(State(RNG.nonNegativeInt).map(n => start + n % (stopExclusive-start)))
     def run(rng: RNG): (Int, RNG) = {
       val (i, r) = RNG.nonNegativeInt(rng)
       val result = (i % math.abs(stopExclusive - start)) + start
@@ -61,11 +62,20 @@ object Gen {
 
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(g.sample)))
+
+  def stringN(n: Int): Gen[String] =
+    listOfN(n, choose(0,127)).map((_:List[Int]).map(_.toChar).mkString)
 }
 
 case class Gen[+A](sample: State[RNG,A]) {
-  def map[A,B](f: A => B): Gen[B] = ???
-  def flatMap[A,B](f: A => Gen[B]): Gen[B] = ???
+  def map[B](f: A => B): Gen[B] =
+    Gen(sample.map(f))
+
+  def flatMap[B](f: A => Gen[B]): Gen[B] =
+    Gen(sample.flatMap(f(_).sample))
+
+  def listOfN(size: Gen[Int]): Gen[List[A]] =
+    size flatMap (Gen.listOfN(_, this))
 }
 
 trait SGen[+A] {
