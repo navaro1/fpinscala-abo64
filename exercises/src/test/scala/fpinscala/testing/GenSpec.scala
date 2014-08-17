@@ -184,4 +184,45 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     forAll(tests)(testOr)
   }
 
+  behavior of "8.10 Gen.unsized"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert("X" == Gen.unit("X").unsized.forSize(n).get)
+    }
+  }
+
+  behavior of "8.11.1 SGen.apply"
+
+  private def unitSGen: SGen[Int] = SGen(Gen.unit(_))
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert(n == unitSGen(n).get)
+    }
+  }
+
+  behavior of "8.11.2 SGen.map"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert(n + 1 == unitSGen(n).map(_ + 1).get)
+    }
+  }
+
+  behavior of "8.11.3 SGen.flatMap"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert(n + 1 == unitSGen(n).flatMap(n => unitSGen(n + 1)).get)
+    }
+  }
+
+  behavior of "8.11.4 SGen.**"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert((n, n + 1) == (unitSGen(n) ** unitSGen(n + 1)).get)
+    }
+  }
 }
