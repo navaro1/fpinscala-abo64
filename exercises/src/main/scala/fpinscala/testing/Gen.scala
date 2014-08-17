@@ -128,6 +128,12 @@ object Gen {
 
     Gen.double flatMap {d => if (d < g1Threshold) g1._1 else g2._1}
   }
+
+  def listOf[A](g: Gen[A]): SGen[List[A]] =
+    SGen(n => g.listOfN(n))
+
+  def listOf1[A](g: Gen[A]): SGen[List[A]] =
+    SGen(n => g.listOfN(n max 1))
 }
 
 case class Gen[+A](sample: State[RNG,A]) {
@@ -140,8 +146,15 @@ case class Gen[+A](sample: State[RNG,A]) {
   def map2[B,C](g: Gen[B])(f: (A,B) => C): Gen[C] =
     Gen(sample.map2(g.sample)(f))
 
+  def listOfN(size: Int): Gen[List[A]] =
+    Gen.listOfN(size, this)
+
   def listOfN(size: Gen[Int]): Gen[List[A]] =
     size flatMap (Gen.listOfN(_, this))
+
+  def listOf: SGen[List[A]] = Gen.listOf(this)
+
+  def listOf1: SGen[List[A]] = Gen.listOf1(this)
 
   def **[B](g: Gen[B]): Gen[(A,B)] =
     (this map2 g)((_,_))

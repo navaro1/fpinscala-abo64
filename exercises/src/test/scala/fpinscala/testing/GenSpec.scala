@@ -225,4 +225,20 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       assert((n, n + 1) == (unitSGen(n) ** unitSGen(n + 1)).get)
     }
   }
+
+  behavior of "8.12 SGen.listOf"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert(List.fill(n)("X") == Gen.listOf(Gen.unit("X")).forSize(n).get)
+    }
+  }
+
+  behavior of "8.13 SGen.listOf1"
+
+  it should "work" in {
+    forAll(between0And100) { n =>
+      assert(List.fill(n max 1)("X") == Gen.listOf1(Gen.unit("X")).forSize(n).get)
+    }
+  }
 }
