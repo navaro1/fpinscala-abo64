@@ -12,3 +12,5 @@ project.vim
 .project
 .worksheet/
 exercises/Worksheet.sc
+*.sc
+.worksheet

@@ -286,6 +286,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
     forAll(tests)(testReverse)
   }
 
+<<<<<<< HEAD
   behavior of "3.13.1 foldLeftViaFoldRight"
 
   it should "work for sum" in {
@@ -340,6 +341,8 @@ class ListSpec extends FlatSpec with PropertyChecks {
     forAll(tests)(testAppendFoldRightViaFoldLeft)
   }
 
+=======
+>>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35
   behavior of "3.14.1 appendViaFoldLeft"
 
   it should "be ismorphic to append" in {
