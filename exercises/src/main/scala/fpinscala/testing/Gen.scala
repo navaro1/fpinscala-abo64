@@ -169,13 +169,7 @@ case class SGen[+A](forSize: Int => Gen[A]) {
     SGen(forSize andThen (_ map f))
 
   def flatMap[B](f: A => SGen[B]): SGen[B] =
-    SGen { n =>
-      Gen(State { rng: RNG =>
-        val (a, rng1) = this(n).sample.run(rng)
-        val (b, rng2) = f(a)(n).sample.run(rng1)
-        (b, rng2)
-      })
-    }
+    SGen(n => forSize(n).unsized.flatMap(f)(n))
 
   def **[B](s2: SGen[B]): SGen[(A,B)] =
     SGen(n => apply(n) ** s2(n))

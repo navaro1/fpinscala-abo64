@@ -403,6 +403,10 @@ trait SGen[+A] {
     case Sized(g) => Sized(g andThen (_ map f))
     case Unsized(g) => Unsized(g map f)
   }
+  def toGen(i: Int) = this match {
+    case Sized(g) => g(i)
+    case Unsized(g) => g
+  }
   def flatMap[B](f: A => Gen[B]): SGen[B] = this match {
     case Sized(g) => Sized(g andThen (_ flatMap f))
     case Unsized(g) => Unsized(g flatMap f)

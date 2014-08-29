@@ -23,7 +23,7 @@ object FPInScalaBuild extends Build {
   lazy val exercises =
     Project(id = "exercises",
             base = file("exercises"),
-            settings = opts)
+            settings = opts) dependsOn(answers)
   lazy val answers =
     Project(id = "answers",
             base = file("answers"),

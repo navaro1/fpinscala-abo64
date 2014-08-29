@@ -43,8 +43,10 @@ object List { // `List` companion object. Contains functions for creating and wo
   def foldLeftViaFoldRight[A,B](l: List[A], z: B)(f: (B,A) => B): B =
     foldRight(reverse(l), z)((a,b) => f(b,a))
 
+//  def foldRightViaFoldLeft[A,B](l: List[A], z: B)(f: (A,B) => B): B =
+//    foldLeft(l, z)((a,b) => f(b,a))
   def foldRightViaFoldLeft[A,B](l: List[A], z: B)(f: (A,B) => B): B =
-    foldLeft(l, z)((a,b) => f(b,a))
+    foldLeft(l, (b:B) => b)((g,a) => b => g(f(a,b)))(z)
 
   def sum2(ns: List[Int]) = 
     foldRight(ns, 0)((x,y) => x + y)
@@ -96,8 +98,13 @@ object List { // `List` companion object. Contains functions for creating and wo
 //    loop(l ,0)
 //  }
 
-  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match {
-    case Nil => z
+//  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match {
+//    case Nil => z
+//    case Cons(h,t) => foldLeft(t, f(z, h))(f)
+//  }
+
+  def foldLeft[A,B](l: List[A], z: B, trace: String = "")(f: (B, A) => B): B = l match {
+    case Nil => {println(s"trace: $trace$z"); z}
     case Cons(h,t) => foldLeft(t, f(z, h))(f)
   }
 
