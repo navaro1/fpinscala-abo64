@@ -98,13 +98,8 @@ object List { // `List` companion object. Contains functions for creating and wo
 //    loop(l ,0)
 //  }
 
-//  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match {
-//    case Nil => z
-//    case Cons(h,t) => foldLeft(t, f(z, h))(f)
-//  }
-
-  def foldLeft[A,B](l: List[A], z: B, trace: String = "")(f: (B, A) => B): B = l match {
-    case Nil => {println(s"trace: $trace$z"); z}
+  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match {
+    case Nil => z
     case Cons(h,t) => foldLeft(t, f(z, h))(f)
   }
 
@@ -128,7 +123,6 @@ object List { // `List` companion object. Contains functions for creating and wo
   def appendViaFoldRight[A](l1: List[A], l2: List[A]): List[A] = 
     foldRight(l1, l2)(Cons(_,_))
 
-<<<<<<< HEAD
   def appendViaFoldLeft[A](a1: List[A], a2: List[A]): List[A] =
     foldLeft(reverse(a1), a2)((t,h) => Cons(h,t))
 
@@ -183,37 +177,3 @@ object List { // `List` companion object. Contains functions for creating and wo
     }
   }
 }
-=======
-  def sumViaFoldLeft(nums: List[Int]): Int = sys.error("todo")
-
-  def productViaFoldLeft(nums: List[Double]): Double = sys.error("todo")
-
-  def lengthViaFoldLeft(l: List[_]): Int = sys.error("todo")
-
-  def reverse[A](l: List[A]): List[A] = sys.error("todo")
-
-  def appendViaFoldRight[A](l1: List[A], l2: List[A]): List[A] = sys.error("todo")
-
-  def appendViaFoldLeft[A](a1: List[A], a2: List[A]): List[A] = sys.error("todo")
-
-  def concat[A](l: List[List[A]]): List[A] = sys.error("todo")
-
-  def add1(nums: List[Int]): List[Int] = sys.error("todo")
-
-  def doubleToString(l: List[Double]): List[String] = sys.error("todo")
-
-  def map[A,B](l: List[A])(f: A => B): List[B] = sys.error("todo")
-
-  def filter[A](l: List[A])(f: A => Boolean): List[A] = sys.error("todo")
-
-  def flatMap[A,B](l: List[A])(f: A => List[B]): List[B] = sys.error("todo")
-
-  def filterViaFlatMap[A](l: List[A])(f: A => Boolean): List[A] = sys.error("todo")
-
-  def addPairwise(a: List[Int], b: List[Int]): List[Int] = sys.error("todo")
-
-  def zipWith[A,B,C](a: List[A], b: List[B])(f: (A,B) => C): List[C] = sys.error("todo")
-
-  def hasSubsequence[A](l: List[A], sub: List[A]): Boolean = sys.error("todo")
-}
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35

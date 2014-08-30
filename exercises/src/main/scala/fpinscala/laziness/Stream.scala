@@ -20,7 +20,6 @@ trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
-<<<<<<< HEAD
 
   def toList: List[A] = {
 //    foldRight(Nil:List[A])(_ :: _) }
@@ -64,16 +63,6 @@ trait Stream[+A] {
     case Cons(h, t) if p(h()) => cons(h(), t().takeWhile(p))
     case _ => Stream.empty
   }
-=======
-
-  def toList: List[A] = sys.error("todo")
-
-  def take(n: Int): Stream[A] = sys.error("todo")
-
-  def takeViaUnfold(n: Int): Stream[A] = sys.error("todo")
-
-  def drop(n: Int): Stream[A] = sys.error("todo")
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35
 
   def takeWhileViaUnfold(p: A => Boolean): Stream[A] =
     unfold(this) {
@@ -81,7 +70,6 @@ trait Stream[+A] {
       case _ => None
     }
 
-<<<<<<< HEAD
   def forAll(p: A => Boolean): Boolean =
     foldRight(true)((a, b) => p(a) && b)
 
@@ -117,29 +105,8 @@ trait Stream[+A] {
 
   def zip[B](s2: Stream[B]): Stream[(A,B)] = 
     zipWith(s2)((_,_))
-=======
-  def takeWhileViaUnfold(p: A => Boolean): Stream[A] = sys.error("todo")
-
-  def forAll(p: A => Boolean): Boolean = sys.error("todo")
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35
-
-  def takeWhileViaFoldRight(p: A => Boolean): Stream[A] = sys.error("todo")
-
-  def headOption: Option[A] = sys.error("todo")
-
-  def map[B](f: A => B): Stream[B] = sys.error("todo")
-
-  def mapViaUnfold[B](f: A => B): Stream[B] = sys.error("todo")
-
-  def filter(p: A => Boolean): Stream[A] = sys.error("todo")
-
-  def append[B>:A](other: Stream[B]): Stream[B] = sys.error("todo")
-
-  def flatMap[B](f: A => Stream[B]): Stream[B] = sys.error("todo")
-
-  def zipWith[B,C](s2: Stream[B])(f: (A,B) => C): Stream[C] = sys.error("todo")
-  def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
 }
+
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
@@ -157,7 +124,6 @@ object Stream {
     else cons(as.head, apply(as.tail: _*))
 
   val ones: Stream[Int] = Stream.cons(1, ones)
-<<<<<<< HEAD
 
   def constant[A](a: A): Stream[A] = cons(a, constant(a))
 
@@ -186,22 +152,3 @@ object Stream {
   val onesViaUnfold =
     unfold(1)(_ => Some(1,1))
 }
-=======
-
-  def constant[A](a: A): Stream[A] = sys.error("todo")
-
-  def from(n: Int): Stream[Int] = sys.error("todo")
-
-  val fibs: Stream[Int] = sys.error("todo")
-
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = sys.error("todo")
-
-  val fibsViaUnfold: Stream[Int] = sys.error("todo")
-
-  def fromViaUnfold(n: Int): Stream[Int] = sys.error("todo")
-
-  def constantViaUnfold[A](a: A): Stream[A] = sys.error("todo")
-
-  val onesViaUnfold: Stream[Int] = sys.error("todo")
-}
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35

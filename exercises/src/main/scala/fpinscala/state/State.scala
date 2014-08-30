@@ -94,33 +94,17 @@ object RNG {
       g(a)(rng2)
     }
 
-<<<<<<< HEAD
   def nonNegativeLessThan(n: Int): Rand[Int] =
     flatMap(nonNegativeInt) { i =>
       val mod = i % n
       if (i + (n-1) - mod >= 0) unit(mod) else nonNegativeLessThan(n)
     }
-=======
-  def doubleViaMap: Rand[Double] = ???
-
-  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35
 
   def mapViaFlatMap[A,B](ra: Rand[A])(f: A => B): Rand[B] =
     flatMap(ra)(a => unit(f(a)))
 
-<<<<<<< HEAD
   def map2ViaFlatMap[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
     flatMap(ra)(a => map(rb)(b => f(a, b)))
-=======
-  def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = ???
-
-  def nonNegativeLessThan(n: Int): Rand[Int] = ???
-
-  def mapViaFlatMap[A,B](s: Rand[A])(f: A => B): Rand[B] = ???
-
-  def map2ViaFlatMap[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35
 }
 
 case class State[S,+A](run: S => (A, S)) {
@@ -176,18 +160,9 @@ object Candy {
 object State {
   type Rand[A] = State[RNG, A]
 
-<<<<<<< HEAD
   def unit[S,A](a: A): State[S,A] =
     State(s => (a, s))
 
   def sequence[S,A](sas: List[State[S, A]]): State[S, List[A]] =
     sas.foldRight(unit[S, List[A]](List()))((f, acc) => f.map2(acc)(_ :: _))
 }
-=======
-  def unit[S, A](a: A): State[S, A] = ???
-
-  def sequence[S, A](sas: List[State[S, A]]): State[S, List[A]] = ???
-
-  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
-}
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35

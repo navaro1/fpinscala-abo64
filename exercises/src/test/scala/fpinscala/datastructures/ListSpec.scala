@@ -286,7 +286,6 @@ class ListSpec extends FlatSpec with PropertyChecks {
     forAll(tests)(testReverse)
   }
 
-<<<<<<< HEAD
   behavior of "3.13.1 foldLeftViaFoldRight"
 
   it should "work for sum" in {
@@ -330,7 +329,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
 
   it should "work for append" in {
     def testAppendFoldRightViaFoldLeft[A](l1: List[A], l2: List[A], expected: List[A]) =
-      assertResult(expected)(foldRightViaFoldLeft(reverse(l1), l2)((h,t) => Cons(h,t)))
+      assertResult(expected)(foldRightViaFoldLeft(l1, l2)((h,t) => Cons(h,t)))
 
     val tests = Table(
       ("l1", "l2", "foldRightViaFoldLeft(reverse(l1), l2)((h,t) => Cons(h,t))"),
@@ -341,8 +340,6 @@ class ListSpec extends FlatSpec with PropertyChecks {
     forAll(tests)(testAppendFoldRightViaFoldLeft)
   }
 
-=======
->>>>>>> 7755ca026a4f811472a9e7984c1acb9a3c17be35
   behavior of "3.14.1 appendViaFoldLeft"
 
   it should "be ismorphic to append" in {
