@@ -204,7 +204,7 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
     }
   }
 
-  behavior of "7.4.1 join"
+  behavior of "7.14.1 join"
 
   it should "work asynchronously" in {
     val ppi = lazyUnit(lazyUnit(42))
@@ -215,7 +215,7 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
     }
   }
 
-  behavior of "7.4.2 flatMapViaJoin"
+  behavior of "7.14.2 flatMapViaJoin"
 
   it should "work asynchronously" in {
     val pi = lazyUnit(42)
@@ -226,7 +226,7 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
     }
   }
 
-  behavior of "7.4.3 joinViaFlatMap"
+  behavior of "7.14.3 joinViaFlatMap"
 
   it should "work asynchronously" in {
     val ppi = lazyUnit(lazyUnit(42))
@@ -236,5 +236,4 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
       assertAsync
     }
   }
-
 }
