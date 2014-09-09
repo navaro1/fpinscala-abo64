@@ -8,7 +8,9 @@ object Par {
   def run[A](s: ExecutorService)(a: Par[A]): Future[A] = a(s)
 
   def unit[A](a: A): Par[A] = (es: ExecutorService) => UnitFuture(a) // `unit` is represented as a function that returns a `UnitFuture`, which is a simple implementation of `Future` that just wraps a constant value. It doesn't use the `ExecutorService` at all. It's always done and can't be cancelled. Its `get` method simply returns the value that we gave it.
-  
+
+  def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+
   private case class UnitFuture[A](get: A) extends Future[A] {
     def isDone = true 
     def get(timeout: Long, units: TimeUnit) = get 
@@ -28,10 +30,24 @@ object Par {
       def call = a(es).get
     })
 
+  def asyncF[A,B](f: A => B): A => Par[B] =
+    a => Par.lazyUnit(f(a))
+
   def map[A,B](pa: Par[A])(f: A => B): Par[B] = 
     map2(pa, unit(()))((a,_) => f(a))
 
   def sortPar(parList: Par[List[Int]]) = map(parList)(_.sorted)
+
+  def sequence[A](as: List[Par[A]]): Par[List[A]] = as match {
+    case Nil => unit(Nil)
+    case h :: t => map2(h, fork(sequence(t)))(_ :: _)
+  }
+
+  def parFilter[A](l: List[A])(f: A => Boolean): Par[List[A]] = {
+    val pars: List[Par[List[A]]] = 
+      l map (asyncF((a: A) => if (f(a)) List(a) else List())) 
+    map(sequence(pars))(_.flatten)
+  }
 
   def equal[A](e: ExecutorService)(p: Par[A], p2: Par[A]): Boolean = 
     p(e).get == p2(e).get
@@ -44,12 +60,59 @@ object Par {
       if (run(es)(cond).get) t(es) // Notice we are blocking on the result of `cond`.
       else f(es)
 
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] = {
+    es => {
+      val i = n(es).get
+      run(es)(choices(i))
+    }
+  }
+
+  def choiceViaChoiceN[A](a: Par[Boolean])(ifTrue: Par[A], ifFalse: Par[A]): Par[A] =
+    choiceN(map(a)(if (_) 0 else 1))(List(ifTrue, ifFalse))
+
+  def choiceMap[K,V](key: Par[K])(choices: Map[K,Par[V]]): Par[V] = {
+    es => {
+      val k = key(es).get
+      run(es)(choices(k))
+    }
+  }
+
+  def chooser[A,B](pa: Par[A])(choices: A => Par[B]): Par[B] =
+    es => {
+      val a = pa(es).get
+      run(es)(choices(a))
+    }
+
+  def choiceViaChooser[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    chooser(cond)(if (_) t else f)
+
+  def choiceNViaChooser[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    chooser(n)(choices(_))
+
+  def flatMap[A,B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    es => {
+      val a = pa(es).get
+      run(es)(f(a))
+    }
+
+  def join[A](ppa: Par[Par[A]]): Par[A] =
+    es => {
+      val pa = ppa(es).get
+      pa(es)
+    }
+
+  def flatMapViaJoin[A,B](pa: Par[A])(f: A => Par[B]): Par[B] =
+    join(map(pa)(f))
+
+  def joinViaFlatMap[A](ppa: Par[Par[A]]): Par[A] =
+    flatMap(ppa)(x => x)
+
   /* Gives us infix syntax for `Par`. */
-  implicit def toParOps[A](p: Par[A]): ParOps[A] = new ParOps(p)
+//  implicit def toParOps[A](p: Par[A]): ParOps[A] = new ParOps(p)
 
-  class ParOps[A](p: Par[A]) {
-
-
+  // since Scala 2.10: implicit class instead of implicit converter function
+  implicit class ParOps[A](p: Par[A]) {
+    def run(s: ExecutorService): Future[A] = Par.run(s)(p)
   }
 }
 
