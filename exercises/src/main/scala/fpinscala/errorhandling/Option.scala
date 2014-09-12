@@ -55,7 +55,11 @@ object Option {
   }
 
   def map2[A,B,C](oa: Option[A], ob: Option[B])(f: (A, B) => C): Option[C] =
-    oa flatMap { a => ob map {b => f(a,b) } }
+//    oa flatMap { a => ob map {b => f(a,b) } }
+    for {
+      a <- oa
+      b <- ob
+    } yield f(a,b)
 
   def sequence[A](as: List[Option[A]]): Option[List[A]] = as match {
     case Nil => Some(Nil)
