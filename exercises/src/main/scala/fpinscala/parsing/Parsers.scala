@@ -1,9 +1,10 @@
 package fpinscala.parsing
 
-import java.util.regex._
 import scala.util.matching.Regex
-import fpinscala.testing._
-import fpinscala.testing.Prop._
+
+import fpinscala.testing.Gen
+import fpinscala.testing.Prop
+import fpinscala.testing.Prop.forAll
 
 trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trait
 
@@ -42,10 +43,7 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
   def product[A,B](p: Parser[A], p2: => Parser[B]): Parser[(A,B)] = // 154, 156, 157
     flatMap(p)(a => map(p2)(b => (a,b)))
 
-  def map2[A,B,C](p: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] = // 154, 156
-//    product[A,B](p, p2) map ((ab:(A,B)) => {val (a,b) = ab; f(a,b)})
-//    product[A,B](p, p2) map ((ab:(A,B)) => f.tupled(ab))
-//    product[A,B](p, p2) map f.tupled
+  def map2[A,B,C](p: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] = // 157
     flatMap(p)(a => map(p2)(b => f(a,b)))
 
   def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B] // 157
@@ -64,7 +62,7 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
   }
 
   object Laws {
-    def singleCharLaw1(c: Char) = run(char(c))(c.toString) == Right(c) // 149
+    def singleCharLaw(c: Char) = run(char(c))(c.toString) == Right(c) // 149
     def singleStringLaw(s: String) = run(string(s))(s) == Right(s) // 149
 
     def equal[A](p1: Parser[A], p2: Parser[A])(in: Gen[String]): Prop = // 153
@@ -72,17 +70,11 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
     def mapLaw[A](p: Parser[A])(in: Gen[String]): Prop = // 153
       equal(p, p.map((a:A) => a))(in)
 
-//    def succeedLaw[A](a: Gen[A], s: Gen[String]): Prop = // 153
-//      forAll(a) {a => forAll(s) { s => run(succeed(a))(s) == Right(a) }}
-//    def succeedLaw[A](a: Gen[A], s: Gen[String]): Prop = // 153
-//      forAll(a) {a => run(succeed(a))("") == Right(a) }
     def succeedLaw[A](a: A)(s: String) = // 153
       run(succeed(a))(s) == Right(a)
-    def numALaw[A](p: Parser[A]) = // 154
-      p.many.map((_: List[A]).size) == slice(p.many).map((_: String).size)
 
-    def productLaw[A](p: Parser[A])(in: Gen[String]): Prop = // 154
-      equal(product(p,p), p.map((a:A) => (a,a)))(in)
+    def numALaw[A](p: Parser[A], in: Gen[String]) = // 154
+      equal(p.many.map((_: List[A]).size), slice(p.many).map((_: String).size))(in)
 
     def csListOfNLaw[A](p: Parser[A])(n: Gen[Int]): Prop = // 157
       forAll(n)(n => run(Exercises.csListOfN(p))(n + ("a" * n)).right.get.size == n)
@@ -98,12 +90,13 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
       """149: run(or(string("abra"), string("cadabra")))("cadabra") == Right("cadabra")""" ->
         (run(or(string("abra"), string("cadabra")))("cadabra") == Right("cadabra")),
 
-//      """150: run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")""" ->
-//        (run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")), // 150
-//      """150: run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")""" ->
-//        (run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")),
-//      """150: run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")""" ->
-//        (run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")),
+      // seems to be a bug in the book: return type of listOfN is Parser[List[A]], not Parser[A]
+      """150: run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad"))""" ->
+        (run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad"))), // 150
+      """150: run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab"))""" ->
+        (run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab"))),
+      """150: run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab"))""" ->
+        (run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab"))),
 
       """154: run(numA)("aaa") == Right(3)""" ->
         (run(numA)("aaa") == Right(3)),
@@ -119,8 +112,13 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
   }
 
   object Exercises {
-  def csListOfN[A](p: Parser[A]): Parser[List[A]] = // 157
-    regex("\\d+".r) flatMap(n => listOfN(n.toInt, p))
+    def map2ViaProduct[A,B,C](p: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] = // 154
+//    product[A,B](p, p2) map ((ab:(A,B)) => {val (a,b) = ab; f(a,b)})
+//    product[A,B](p, p2) map ((ab:(A,B)) => f.tupled(ab))
+    product[A,B](p, p2) map f.tupled
+
+    def csListOfN[A](p: Parser[A]): Parser[List[A]] = // 157
+      regex("\\d+".r) flatMap (n => listOfN(n.toInt, p))
   }
 }
 
