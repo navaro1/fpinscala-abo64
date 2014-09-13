@@ -50,6 +50,10 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 
   implicit def regex(r: Regex): Parser[String] // 157
 
+  def label[A](msg: String)(p: Parser[A]): Parser[A] // 161
+
+  def scope[A](msg: String)(p: Parser[A]): Parser[A] // 162
+
   case class ParserOps[A](p: Parser[A]) {
     def |[B>:A](p2: Parser[B]): Parser[B] = self.or(p,p2) // 150
     def or[B>:A](p2: => Parser[B]): Parser[B] = self.or(p,p2) // 150
@@ -78,37 +82,6 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 
     def csListOfNLaw[A](p: Parser[A])(n: Gen[Int]): Prop = // 157
       forAll(n)(n => run(Exercises.csListOfN(p))(n + ("a" * n)).right.get.size == n)
-  }
-
-  object Facts {
-    val numA: Parser[Int] = char('a').many.map((_: List[Char]).size) // 152
-    val numA1 = char('a').many.slice.map((_: String).size) // 154
-
-    val facts: Map[String,Boolean] = Map(
-      """149: run(or(string("abra"),string("cadabra")))("abra") == Right("abra")""" ->
-        (run(or(string("abra"), string("cadabra")))("abra") == Right("abra")), // 149
-      """149: run(or(string("abra"), string("cadabra")))("cadabra") == Right("cadabra")""" ->
-        (run(or(string("abra"), string("cadabra")))("cadabra") == Right("cadabra")),
-
-      // seems to be a bug in the book: return type of listOfN is Parser[List[A]], not Parser[A]
-      """150: run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad"))""" ->
-        (run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad"))), // 150
-      """150: run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab"))""" ->
-        (run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab"))),
-      """150: run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab"))""" ->
-        (run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab"))),
-
-      """154: run(numA)("aaa") == Right(3)""" ->
-        (run(numA)("aaa") == Right(3)),
-      """154: run(numA)("b") == Right(0)""" ->
-        (run(numA)("b") == Right(0)),
-      """154: run(numA1)("aaa") == Right(3)""" ->
-        (run(numA1)("aaa") == Right(3)),
-      """154: run(numA1)("b") == Right(0)""" ->
-        (run(numA1)("b") == Right(0)),
-      """154: run(slice((char('a') | char('b')).many))("aaba") == Right("aaba")""" ->
-        (run(slice((char('a') | char('b')).many))("aaba") == Right("aaba")) // 154
-    )
   }
 
   object Exercises {

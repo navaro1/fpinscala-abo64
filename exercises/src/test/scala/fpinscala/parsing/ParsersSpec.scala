@@ -11,53 +11,11 @@ import org.scalatest.prop.PropertyChecks
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ParsersSpec extends FlatSpec with PropertyChecks {
 
-  private type ParseSuccess[+A] = (A,Location)
-  private type ParseResult[+A] = Either[ParseError,ParseSuccess[A]]
-  private type Parser[+A] = Location => ParseResult[A]
-
-  private object TestParser extends Parsers[Parser] {
-    override def run[A](p: Parser[A])(input: String): Either[ParseError,A] =
-      p(Location(input, 0)) match {
-        case Right((a, _)) => Right(a)
-        case Left(e) => Left(e)
-      }
-    implicit override def string(s: String): Parser[String] = {
-      in => if (input(in).startsWith(s)) Right((s, in.advanceBy(s.length)))
-            else parseError(in, s"""string: "${input(in)}" != "$s"""")
-    }
-    override def succeed[A](a: A): Parser[A] =
-      in => Right((a, in))
-    implicit override def regex(r: Regex): Parser[String] = {
-      in => r.findPrefixOf(input(in)) match {
-          case Some(prefix) => Right((prefix, in.advanceBy(prefix.length)))
-          case _ => parseError(in, s"""regex: "${input(in)}" does not start with regex "$r"""")
-        }
-    }
-    override def flatMap[A,B](f: Parser[A])(g: A => Parser[B]): Parser[B] = {
-      in => f(in) match {
-        case Right((a,in1)) => g(a)(in1)
-        case left@Left(_) => left.asInstanceOf[ParseResult[B]]
-      }
-    }
-    override def or[A](p1: Parser[A], p2: => Parser[A]): Parser[A] = {
-      in => p1(in) match {
-        case left@Left(_) => p2(in)
-        case success => success
-      }
-    }
-    override def slice[A](p: Parser[A]): Parser[String] = {
-      def slice(loc: Location, n: Int) = loc.input.substring(loc.offset, loc.offset + n)
-      in => p(in) match {
-        case Right((a,in1)) => Right(slice(in, in1.offset), in1)
-        case left@Left(_) => left.asInstanceOf[ParseResult[String]]
-      }
-    }
-
-    private def input(loc: Location): String = loc.input.substring(loc.offset)
-    def parseError[A](loc: Location, msg: String): ParseResult[A] = Left(ParseError(List((loc, msg))))
-  }
-
+  import TestParserTypes._
   import TestParser._
+
+  private def run[A](p: Parser[A])(input: String): Either[ParseError, A] =
+      TestParser.run(p)(input)
 
   private def limitedStringGen(min: Int, max: Int) =
     Gen.choose(min, max) flatMap { l => Gen.listOfN(l, Gen.alphaNumChar)} map(_.mkString)
@@ -76,7 +34,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
     assert(TestParser.run(parser)("abracadabrax") == Right("abracadabra"),
         """run(parser)("abracadabrax")""")
 
-    assert(TestParser.run(parser)("abra cadabra") ==
+    assert(run(parser)("abra cadabra") ==
       parseError(Location("abra cadabra", 4), s"""string: " cadabra" != "cadabra""""),
         """run(parser)("abra cadabra")""")
   }
@@ -85,9 +43,9 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
 
   it should "work" in {
     val parser: Parser[List[Char]] = many1(char('a'))
-    assert(TestParser.run(parser)("aaa") == Right(List.fill(3)('a')), """run(parser)("aaa")""")
+    assert(run(parser)("aaa") == Right(List.fill(3)('a')), """run(parser)("aaa")""")
 
-    assert(TestParser.run(parser)("baaa") ==
+    assert(run(parser)("baaa") ==
       parseError(Location("baaa", 0), s"""string: "baaa" != "a""""),
         """run(parser)("baaa")""")
   }
@@ -105,25 +63,25 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
 
   it should "work" in {
     val parser: Parser[List[Char]] = many(char('a'))
-    assert(TestParser.run(parser)("aaa") == Right(List.fill(3)('a')), """run(parser)("aaa")""")
-    assert(TestParser.run(parser)("baaa") == Right(List()), """run(parser)("baaa")""")
-    assert(TestParser.run(parser)("") == Right(List()), """run(parser)("")""")
+    assert(run(parser)("aaa") == Right(List.fill(3)('a')), """run(parser)("aaa")""")
+    assert(run(parser)("baaa") == Right(List()), """run(parser)("baaa")""")
+    assert(run(parser)("") == Right(List()), """run(parser)("")""")
   }
 
   behavior of "9.4 listOfN"
 
   it should "work" in {
     // seems to be a bug in the book: return type of listOfN is Parser[List[A]], not Parser[A]
-    assert(TestParser.run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad")),
+    assert(run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad")),
         """150: run(listOfN(3, "ab" | "cad"))("ababcad")""")
-    assert(TestParser.run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab")),
+    assert(run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab")),
         """150: run(listOfN(3, "ab" | "cad"))("cadabab")""")
-    assert(TestParser.run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab")),
+    assert(run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab")),
         """150: run(listOfN(3, "ab" | "cad"))("ababab")""")
-    assert(TestParser.run(listOfN(3, "ab" | "cad"))("abababx") == Right(List("ab", "ab", "ab")),
+    assert(run(listOfN(3, "ab" | "cad"))("abababx") == Right(List("ab", "ab", "ab")),
         """run(listOfN(3, "ab" | "cad"))("abababx")""")
 
-    assert(TestParser.run(listOfN(3, "ab" | "cad"))("ababaxb") ==
+    assert(run(listOfN(3, "ab" | "cad"))("ababaxb") ==
       parseError(Location("ababaxb", 4), s"""string: "axb" != "cad""""),
         """run(listOfN(3, "ab" | "cad"))("ababaxb")""")
   }
@@ -134,11 +92,11 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
 
   it should "succeed for \"4aaaa\"" in {
     val parser: Parser[List[Char]] = csListOfN(char('a'))
-    assert(TestParser.run(parser)("4aaaa") == Right(List.fill(4)('a')))
+    assert(run(parser)("4aaaa") == Right(List.fill(4)('a')))
   }
 
   it should "fail for \"4aaa\"" in {
-    assert(TestParser.run(csListOfN(char('a')))("4aaa") ==
+    assert(run(csListOfN(char('a')))("4aaa") ==
            parseError(Location("4aaa", 4), s"""string: "" != "a""""))
   }
 
@@ -146,7 +104,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
     val parser: Parser[Char] = char('a')
     val strSizeGen = Gen.chooseNum(0, 10) label "n"
     forAll(strSizeGen) { n: Int =>
-      assert(TestParser.run(csListOfN(parser))(n + ("a" * n)).right.get.size == n)
+      assert(run(csListOfN(parser))(n + ("a" * n)).right.get.size == n)
     }
   }
 
@@ -156,14 +114,14 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
     val as = many1(char('a')) map((_:List[Char]).mkString)
     val bs = many1(char('b')) map((_:List[Char]).mkString)
     val abProduct = product(as, bs)
-    assert(TestParser.run(abProduct)("ab") == Right(("a","b")), """run(abProduct)("ab")""")
-    assert(TestParser.run(abProduct)("aabb") == Right(("aa","bb")), """run(abProduct)("aabb")""")
+    assert(run(abProduct)("ab") == Right(("a","b")), """run(abProduct)("ab")""")
+    assert(run(abProduct)("aabb") == Right(("aa","bb")), """run(abProduct)("aabb")""")
 
-    assert(TestParser.run(abProduct)("") ==
+    assert(run(abProduct)("") ==
       parseError(Location("", 0), s"""string: "" != "a""""), """run(abProduct)("")""")
-    assert(TestParser.run(abProduct)("xab") ==
+    assert(run(abProduct)("xab") ==
       parseError(Location("xab", 0), s"""string: "xab" != "a""""), """run(abProduct)("xab")""")
-    assert(TestParser.run(abProduct)("axb") ==
+    assert(run(abProduct)("axb") ==
       parseError(Location("axb", 1), s"""string: "xb" != "b""""), """run(abProduct)("axb")""")
   }
 
@@ -171,12 +129,12 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
 
   it should "work" in {
     val parser: Parser[String] = map2("abra", "cadabra")(_ + _)
-    assert(TestParser.run(parser)("abracadabra") == Right("abracadabra"),
+    assert(run(parser)("abracadabra") == Right("abracadabra"),
         """run(parser)("abracadabra")""")
-    assert(TestParser.run(parser)("abracadabrax") == Right("abracadabra"),
+    assert(run(parser)("abracadabrax") == Right("abracadabra"),
         """run(parser)("abracadabrax")""")
 
-    assert(TestParser.run(parser)("abra cadabra") ==
+    assert(run(parser)("abra cadabra") ==
       parseError(Location("abra cadabra", 4), s"""string: " cadabra" != "cadabra""""),
         """run(parser)("abra cadabra")""")
   }
@@ -184,13 +142,13 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
   behavior of "9.8 map"
 
   private def equal[A](p1: Parser[A], p2: Parser[A]) = {
-    forAll("in") { in: String => assert(TestParser.run(p1)(in) == TestParser.run(p2)(in)) }
+    forAll("in") { in: String => assert(run(p1)(in) == run(p2)(in)) }
   }
 
   it should "preserve structure, p.150" in {
     forAll("p") { p: Parser[String] => equal(p, p.map(identity[String])) }
 //    forAll("p", "in") {(p: Parser[String], in: String) =>
-//      assert(TestParser.run(p)(in) == TestParser.run(p.map(identity[String]))(in))
+//      assert(run(p)(in) == run(p.map(identity[String]))(in))
 //    }
   }
 
@@ -221,7 +179,35 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
   behavior of "Facts"
 
   it should "all be true" in {
-    import TestParser.Facts._
+    val numA: Parser[Int] = char('a').many.map((_: List[Char]).size) // 152
+    val numA1 = char('a').many.slice.map((_: String).size) // 154
+
+    val facts: Map[String,Boolean] = Map(
+      """149: run(or(string("abra"),string("cadabra")))("abra") == Right("abra")""" ->
+        (run(or(string("abra"), string("cadabra")))("abra") == Right("abra")), // 149
+      """149: run(or(string("abra"), string("cadabra")))("cadabra") == Right("cadabra")""" ->
+        (run(or(string("abra"), string("cadabra")))("cadabra") == Right("cadabra")),
+
+      // seems to be a bug in the book: return type of listOfN is Parser[List[A]], not Parser[A]
+      """150: run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad"))""" ->
+        (run(listOfN(3, "ab" | "cad"))("ababcad") == Right(List("ab", "ab", "cad"))), // 150
+      """150: run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab"))""" ->
+        (run(listOfN(3, "ab" | "cad"))("cadabab") == Right(List("cad", "ab", "ab"))),
+      """150: run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab"))""" ->
+        (run(listOfN(3, "ab" | "cad"))("ababab") == Right(List("ab", "ab", "ab"))),
+
+      """154: run(numA)("aaa") == Right(3)""" ->
+        (run(numA)("aaa") == Right(3)),
+      """154: run(numA)("b") == Right(0)""" ->
+        (run(numA)("b") == Right(0)),
+      """154: run(numA1)("aaa") == Right(3)""" ->
+        (run(numA1)("aaa") == Right(3)),
+      """154: run(numA1)("b") == Right(0)""" ->
+        (run(numA1)("b") == Right(0)),
+      """154: run(slice((char('a') | char('b')).many))("aaba") == Right("aaba")""" ->
+        (run(slice((char('a') | char('b')).many))("aaba") == Right("aaba")) // 154
+    )
+
     facts.foreach {case (k, v) => assert(v, k)}
   }
 }
