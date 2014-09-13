@@ -2,13 +2,13 @@ package fpinscala.parsing
 
 import scala.util.matching.Regex
 
-object TestParserTypes {
+private[parsing] object TestParserTypes {
   type ParseSuccess[+A] = (A, Location)
   type ParseResult[+A] = Either[ParseError, ParseSuccess[A]]
   type Parser[+A] = Location => ParseResult[A]
 }
 
-object TestParser extends Parsers[TestParserTypes.Parser] {
+private[parsing] object TestParser extends Parsers[TestParserTypes.Parser] {
   import TestParserTypes._
 
   override def run[A](p: Parser[A])(input: String): Either[ParseError, A] =
@@ -61,6 +61,7 @@ object TestParser extends Parsers[TestParserTypes.Parser] {
       case Left(e) => Left(e.copy(stack = (s, msg) :: e.stack))
       case right => right
     }
+  override def attempt[A](p: Parser[A]): Parser[A] = sys.error("not implemented")
 
   private def input(loc: Location): String = loc.input.substring(loc.offset)
   def parseError[A](loc: Location, msg: String): ParseResult[A] = Left(ParseError(List((loc, msg))))

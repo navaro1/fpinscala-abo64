@@ -54,6 +54,8 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 
   def scope[A](msg: String)(p: Parser[A]): Parser[A] // 162
 
+  def attempt[A](p: Parser[A]): Parser[A] // 164
+
   case class ParserOps[A](p: Parser[A]) {
     def |[B>:A](p2: Parser[B]): Parser[B] = self.or(p,p2) // 150
     def or[B>:A](p2: => Parser[B]): Parser[B] = self.or(p,p2) // 150
@@ -82,6 +84,11 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 
     def csListOfNLaw[A](p: Parser[A])(n: Gen[Int]): Prop = // 157
       forAll(n)(n => run(Exercises.csListOfN(p))(n + ("a" * n)).right.get.size == n)
+
+//    def attemptLaw[A,B](p: Parser[A], p2: Parser[B]) = {
+//      def fail[B]: Parser[B] = (l: Location) => Left(ParseError(List((l, "fail!"))))
+//      equal(attempt(p flatMap (_ => fail)) or p2, p2)
+//    }
   }
 
   object Exercises {
