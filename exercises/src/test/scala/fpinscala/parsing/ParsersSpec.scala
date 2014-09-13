@@ -9,20 +9,11 @@ import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ParsersSpec extends FlatSpec with PropertyChecks {
+class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParserTypes.Parser] {
 
+  override val P = TestParser
   import TestParserTypes._
   import TestParser._
-
-  private def run[A](p: Parser[A])(input: String): Either[ParseError, A] =
-      TestParser.run(p)(input)
-
-  private def limitedStringGen(min: Int, max: Int) =
-    Gen.choose(min, max) flatMap { l => Gen.listOfN(l, Gen.alphaNumChar)} map(_.mkString)
-
-  implicit val arbStringParser: Arbitrary[Parser[String]] =
-//    Arbitrary(arbitrary[String] map string)
-    Arbitrary(limitedStringGen(1, 10) map string)
 
   behavior of "9.1.1 map2ViaProduct"
 
@@ -53,7 +44,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks {
   behavior of "9.2 product law"
 
   it should "hold" in {
-    forAll(limitedStringGen(1, 10) label "p") { s: String =>
+    forAll(limitedStringGen(1, 10) label "s") { s: String =>
       val p: Parser[String] = string(s)
       equal(product(p,p), p.map((a:String) => (a,a)))
     }
