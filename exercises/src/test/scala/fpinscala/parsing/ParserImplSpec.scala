@@ -45,4 +45,17 @@ class ParserImplSpec extends FlatSpec with PropertyChecks with ParserTest[Parser
       assertFailure(p("_" + s), false, s"""$ps("_$s")""")
     }
   }
+
+  behavior of "9.13.3 succeed"
+
+  it should "work" in {
+    forAll("s") { s: String =>
+      val (p,ps) = (succeed(s), s"""succeed("$s")""")
+      assert(p("x") == Success(s, 0), s"""$ps("x")""")
+    }
+    forAll("i") { i: Int =>
+      val (p,ps) = (succeed(i), s"""succeed($i)""")
+      assert(p("x") == Success(i, 0), s"""$ps("x")""")
+    }
+  }
 }
