@@ -20,16 +20,25 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
       case Failure(e, _) => Left(e)
     }
 
-  override implicit def string(s: String): Parser[String] = { // 149
-    def headMatches(s1: String): Boolean =
-      s1.headOption.flatMap(c1 => s.headOption.map(c2 => c1 == c2)).getOrElse(true)
+  private def input(loc: Location): String = loc.input.substring(loc.offset)
 
-    location =>
-      if (location.input.startsWith(s)) Success(s, s.length)
-      else Failure(location.toError("Expected: " + s), headMatches(location.input))
+  override implicit def string(s: String): Parser[String] = { // 149
+    def headMatches(s1: String, s2: String): Boolean =
+      s1.headOption.flatMap(c1 => s2.headOption.map(c2 => c1 == c2)).getOrElse(true)
+
+    loc =>
+      if (input(loc).startsWith(s)) Success(s, s.length)
+      else Failure(loc.toError(s"""string: "${input(loc)}" does not start with "$s""""),
+          headMatches(input(loc), s))
   }
 
-  override implicit def regex(r: Regex): Parser[String] = ??? // 157
+  override implicit def regex(r: Regex): Parser[String] = // 157
+    loc =>
+      r.findPrefixOf(input(loc)) match {
+        case Some(prefix) => Success(prefix, prefix.length)
+        case _ => Failure(loc.toError(s"""regex: "${input(loc)}" does not start with regex "$r""""), false)
+      }
+
   override def slice[A](p: Parser[A]): Parser[String] = ??? // 154
   override def label[A](msg: String)(p: Parser[A]): Parser[A] = ??? // 161
   override def scope[A](msg: String)(p: Parser[A]): Parser[A] = ??? // 162

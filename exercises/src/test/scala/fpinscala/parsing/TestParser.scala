@@ -19,7 +19,7 @@ private[parsing] object TestParser extends Parsers[TestParserTypes.Parser] {
   implicit override def string(s: String): Parser[String] = {
     in =>
       if (input(in).startsWith(s)) Right((s, in.advanceBy(s.length)))
-      else parseError(in, s"""string: "${input(in)}" != "$s"""")
+      else parseError(in, s"""string: "${input(in)}" does not start with "$s"""")
   }
   override def succeed[A](a: A): Parser[A] =
     in => Right((a, in))

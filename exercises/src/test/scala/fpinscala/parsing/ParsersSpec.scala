@@ -1,7 +1,5 @@
 package fpinscala.parsing
 
-import scala.util.matching.Regex
-
 import org.junit.runner.RunWith
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -26,7 +24,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
         """run(parser)("abracadabrax")""")
 
     assert(run(parser)("abra cadabra") ==
-      parseError(Location("abra cadabra", 4), s"""string: " cadabra" != "cadabra""""),
+      parseError(Location("abra cadabra", 4), s"""string: " cadabra" does not start with "cadabra""""),
         """run(parser)("abra cadabra")""")
   }
 
@@ -37,7 +35,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
     assert(run(parser)("aaa") == Right(List.fill(3)('a')), """run(parser)("aaa")""")
 
     assert(run(parser)("baaa") ==
-      parseError(Location("baaa", 0), s"""string: "baaa" != "a""""),
+      parseError(Location("baaa", 0), s"""string: "baaa" does not start with "a""""),
         """run(parser)("baaa")""")
   }
 
@@ -73,7 +71,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
         """run(listOfN(3, "ab" | "cad"))("abababx")""")
 
     assert(run(listOfN(3, "ab" | "cad"))("ababaxb") ==
-      parseError(Location("ababaxb", 4), s"""string: "axb" != "cad""""),
+      parseError(Location("ababaxb", 4), s"""string: "axb" does not start with "cad""""),
         """run(listOfN(3, "ab" | "cad"))("ababaxb")""")
   }
 
@@ -88,7 +86,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
 
   it should "fail for \"4aaa\"" in {
     assert(run(csListOfN(char('a')))("4aaa") ==
-           parseError(Location("4aaa", 4), s"""string: "" != "a""""))
+           parseError(Location("4aaa", 4), s"""string: "" does not start with "a""""))
   }
 
   it should "obey the law on page 157"  in {
@@ -109,11 +107,11 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
     assert(run(abProduct)("aabb") == Right(("aa","bb")), """run(abProduct)("aabb")""")
 
     assert(run(abProduct)("") ==
-      parseError(Location("", 0), s"""string: "" != "a""""), """run(abProduct)("")""")
+      parseError(Location("", 0), s"""string: "" does not start with "a""""), """run(abProduct)("")""")
     assert(run(abProduct)("xab") ==
-      parseError(Location("xab", 0), s"""string: "xab" != "a""""), """run(abProduct)("xab")""")
+      parseError(Location("xab", 0), s"""string: "xab" does not start with "a""""), """run(abProduct)("xab")""")
     assert(run(abProduct)("axb") ==
-      parseError(Location("axb", 1), s"""string: "xb" != "b""""), """run(abProduct)("axb")""")
+      parseError(Location("axb", 1), s"""string: "xb" does not start with "b""""), """run(abProduct)("axb")""")
   }
 
   behavior of "9.7.2 map2"
@@ -126,7 +124,7 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
         """run(parser)("abracadabrax")""")
 
     assert(run(parser)("abra cadabra") ==
-      parseError(Location("abra cadabra", 4), s"""string: " cadabra" != "cadabra""""),
+      parseError(Location("abra cadabra", 4), s"""string: " cadabra" does not start with "cadabra""""),
         """run(parser)("abra cadabra")""")
   }
 

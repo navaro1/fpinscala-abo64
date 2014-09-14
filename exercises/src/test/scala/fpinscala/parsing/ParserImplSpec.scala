@@ -11,14 +11,38 @@ class ParserImplSpec extends FlatSpec with PropertyChecks with ParserTest[Parser
   import ParserTypes._
   import ParserImpl._
 
+  private implicit def toLocation(s: String) = Location(s)
+
+  private def assertFailure(result: Result[_], isCommitted: Boolean, description: String) = result match {
+    case Failure(_, isCommitted) =>
+    case _ => fail(s"$description: expected to be Failure with isCommitted = $isCommitted, but was $result")
+  }
+
   behavior of "9.13.1 string"
 
   it should "work" in {
     forAll(limitedStringGen(1, 10) label "s") { s: String =>
-      val p: Parser[String] = string(s)
-      assert(p(Location(s)) == Success(s, s.length))
-      val loc = Location("_" + s)
-      assert(p(loc) == Failure(loc.toError(s"Expected: $s"), false))
+      val (p,ps) = (string(s), s"""string("$s")""")
+      assert(p(s) == Success(s, s.length), s"""$ps("$s")""")
+      assert(p(s + "_") == Success(s, s.length), s"""$ps("${s}_")""")
+      assert(p(Location("_" + s, 1)) == Success(s, s.length), s"""$ps(Location("_$s",1))""")
+
+      assertFailure(p("_" + s), false, s"""$ps("_$s")""")
+    }
+    assertFailure(string("aaa")("ab"), true, """string("aaa")("ab") [commit if heads match]""")
+  }
+
+  behavior of "9.13.2 regex"
+
+  it should "work" in {
+    forAll(limitedStringGen(1, 10) label "s") { s: String =>
+      val (p,ps) = (regex(s.r), s"""regex("$s")""")
+      assert(p(s) == Success(s, s.length), s"""$ps("$s")""")
+      assert(p(s + "_") == Success(s, s.length), s"""$ps("${s}_")""")
+      assert(regex(s".$s".r)("_" + s) == Success("_" + s, s.length + 1), s"""regex(".$s".r)("_$s")""")
+      assert(p(Location("_" + s, 1)) == Success(s, s.length), s"""$ps(Location("_$s",1))""")
+
+      assertFailure(p("_" + s), false, s"""$ps("_$s")""")
     }
   }
 }
