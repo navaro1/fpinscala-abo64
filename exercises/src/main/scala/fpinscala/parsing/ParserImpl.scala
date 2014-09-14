@@ -39,7 +39,14 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
         case _ => Failure(loc.toError(s"""regex: "${input(loc)}" does not start with regex "$r""""), false)
       }
 
-  override def slice[A](p: Parser[A]): Parser[String] = ??? // 154
+  override def slice[A](p: Parser[A]): Parser[String] = { // 154
+    def slice(loc: Location, n: Int) = loc.input.substring(loc.offset, loc.offset + n)
+
+    loc => p(loc) match {
+      case Success(_, n) => Success(slice(loc, n), n)
+      case f@Failure(_,_) => f
+    }
+  }
   override def label[A](msg: String)(p: Parser[A]): Parser[A] = ??? // 161
   override def scope[A](msg: String)(p: Parser[A]): Parser[A] = ??? // 162
   override def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B] = ??? // 157

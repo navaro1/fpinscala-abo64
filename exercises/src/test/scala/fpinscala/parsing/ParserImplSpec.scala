@@ -58,4 +58,19 @@ class ParserImplSpec extends FlatSpec with PropertyChecks with ParserTest[Parser
       assert(p("x") == Success(i, 0), s"""$ps("x")""")
     }
   }
+
+  behavior of "9.13.4 slice"
+
+  it should "work" in {
+    forAll(limitedStringGen(1, 10) label "s") { s: String =>
+      val (p,ps) = (slice(string(s)), s"""slice(string("$s"))""")
+      assert(p(s) == Success(s, s.length), s"""$ps("$s")""")
+      assert(p(s + "_") == Success(s, s.length), s"""$ps("${s}_")""")
+      assert(p(Location("_" + s, 1)) == Success(s, s.length), s"""$ps(Location("_$s",1))""")
+
+      assertFailure(p("_" + s), false, s"""$ps("_$s")""")
+    }
+    assertFailure(slice(string("aaa"))("ab"), true, """slice(string("aaa"))("ab") [commit if heads match]""")
+  }
+
 }
