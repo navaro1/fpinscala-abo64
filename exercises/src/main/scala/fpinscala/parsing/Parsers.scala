@@ -122,4 +122,12 @@ case class Location(input: String, offset: Int = 0) {
 // 163
 case class ParseError(stack: List[(Location,String)] = List(),
                       otherFailures: List[ParseError] = List()) {
+  def push(loc: Location, msg: String): ParseError = // 167
+    copy(stack = (loc,msg) :: stack)
+  def label[A](s: String): ParseError = // 168
+    ParseError(latestLoc.map((_, s)).toList)
+  def latestLoc: Option[Location] =
+    latest map (_._1)
+  def latest: Option[(Location, String)] =
+    stack.lastOption
 }
