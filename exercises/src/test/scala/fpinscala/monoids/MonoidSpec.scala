@@ -9,7 +9,9 @@ import org.scalatest.prop.PropertyChecks
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonoidSpec extends FlatSpec with PropertyChecks {
 
-  private def monoidLaws[A](m: Monoid[A], gen: Gen[A], isEqual: (A,A) => Boolean = (_:A) == (_:A)) = {
+  private def checkMonoidLaws[A](m: Monoid[A], gen: Gen[A],
+      isEqual: (A,A) => Boolean = (_:A) == (_:A)) =
+  {
     def assertEquals(a1: A, a2: A) = assert(isEqual(a1, a2), s"$a1 == $a2")
     import m._
     forAll(gen label "x", gen label "y", gen label "z") { (x: A, y: A, z: A) =>
@@ -23,29 +25,29 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
 
   behavior of "10.1.1 intAddition"
   it should "obey the monoid laws" in {
-    monoidLaws(Monoid.intAddition, Arbitrary.arbInt.arbitrary)
+    checkMonoidLaws(Monoid.intAddition, Arbitrary.arbInt.arbitrary)
   }
 
   behavior of "10.1.2 intMultiplication"
   it should "obey the monoid laws" in {
-    monoidLaws(Monoid.intMultiplication, Arbitrary.arbInt.arbitrary)
+    checkMonoidLaws(Monoid.intMultiplication, Arbitrary.arbInt.arbitrary)
   }
 
   behavior of "10.1.3 booleanOr"
   it should "obey the monoid laws" in {
-    monoidLaws(Monoid.booleanOr, Arbitrary.arbBool.arbitrary)
+    checkMonoidLaws(Monoid.booleanOr, Arbitrary.arbBool.arbitrary)
   }
 
   behavior of "10.1.4 booleanAnd"
   it should "obey the monoid laws" in {
-    monoidLaws(Monoid.booleanAnd, Arbitrary.arbBool.arbitrary)
+    checkMonoidLaws(Monoid.booleanAnd, Arbitrary.arbBool.arbitrary)
   }
 
   behavior of "10.2 optionMonoid"
   it should "obey the monoid laws" in {
-    monoidLaws(Monoid.optionMonoid[Int], Arbitrary.arbOption[Int].arbitrary)
-    monoidLaws(Monoid.optionMonoid[Boolean], Arbitrary.arbOption[Boolean].arbitrary)
-    monoidLaws(Monoid.optionMonoid[String], Arbitrary.arbOption[String].arbitrary)
+    checkMonoidLaws(Monoid.optionMonoid[Int], Arbitrary.arbOption[Int].arbitrary)
+    checkMonoidLaws(Monoid.optionMonoid[Boolean], Arbitrary.arbOption[Boolean].arbitrary)
+    checkMonoidLaws(Monoid.optionMonoid[String], Arbitrary.arbOption[String].arbitrary)
   }
 
   behavior of "10.3 endoMonoid"
@@ -56,7 +58,13 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     }
     val booleanFunctionGen =
       Gen.oneOf[Boolean => Boolean]({x: Boolean => !x}, identity[Boolean] _)
-    monoidLaws(Monoid.endoMonoid[Boolean], booleanFunctionGen, isEqual[Boolean])
+    checkMonoidLaws(Monoid.endoMonoid[Boolean], booleanFunctionGen, isEqual[Boolean])
+  }
+
+  behavior of "10.4 monoidLaws"
+  it should "check all written monoids so far" in {
+    import fpinscala.testing.Prop.Passed
+    assert(Monoid.testMonoidLaws(10) == Passed)
   }
 
 }

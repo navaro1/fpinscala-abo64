@@ -52,14 +52,43 @@ object Monoid {
 
   // TODO: Placeholder for `Prop`. Remove once you have implemented the `Prop`
   // data type from Part 2.
-  trait Prop {}
+//  trait Prop {}
 
   // TODO: Placeholder for `Gen`. Remove once you have implemented the `Gen`
   // data type from Part 2.
 
   import fpinscala.testing._
   import Prop._
-  def monoidLaws[A](m: Monoid[A], gen: Gen[A]): Prop = sys.error("todo")
+  def monoidLaws[A](m: Monoid[A], gen: Gen[A]): Prop = {
+    import m._
+    // Associativity
+    forAll(for {
+      x <- gen
+      y <- gen
+      z <- gen
+    } yield (x, y, z)) { case (x, y, z) =>
+      op(x, op(y, z)) == op(op(x, y), z) } &&
+    // Identity
+    forAll(gen)((a: A) =>
+      op(a, zero) == a && op(zero, a) == a)
+  }
+
+  def testMonoidLaws(testCases: TestCases): Result = {
+    import fpinscala.state.RNG.Simple
+    def run(prop: Prop) = prop.run(testCases, Simple(0))
+    def intGen(max: Int) = Gen.choose(0, max)
+    def listGen[A](gen: Gen[A]) = gen.listOfN(intGen(10))
+    val stringGen = intGen(10) flatMap(Gen.stringN)
+
+    val monoidProps =
+      monoidLaws(stringMonoid, stringGen) &&
+      monoidLaws(listMonoid[Int], listGen(intGen(100))) &&
+      monoidLaws(listMonoid[String], listGen(stringGen)) &&
+      monoidLaws(intAddition, intGen(100)) &&
+      monoidLaws(intMultiplication, intGen(100))
+
+    run(monoidProps)
+  }
 
   def trimMonoid(s: String): Monoid[String] = sys.error("todo")
 
