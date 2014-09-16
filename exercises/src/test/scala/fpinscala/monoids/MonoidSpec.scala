@@ -9,14 +9,15 @@ import org.scalatest.prop.PropertyChecks
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonoidSpec extends FlatSpec with PropertyChecks {
 
-  private def monoidLaws[A](m: Monoid[A], gen: Gen[A]) = {
+  private def monoidLaws[A](m: Monoid[A], gen: Gen[A], isEqual: (A,A) => Boolean = (_:A) == (_:A)) = {
+    def assertEquals(a1: A, a2: A) = assert(isEqual(a1, a2), s"$a1 == $a2")
     import m._
     forAll(gen label "x", gen label "y", gen label "z") { (x: A, y: A, z: A) =>
-      assert(op(op(x, y), z) == op(x, op(y, z)))
+      assertEquals(op(op(x, y), z), op(x, op(y, z)))
     }
     forAll(gen label "x") { x: A =>
-      assert(op(x, zero) == x)
-      assert(op(zero, x) == x)
+      assertEquals(op(x, zero), x)
+      assertEquals(op(zero, x), x)
     }
   }
 
@@ -46,4 +47,16 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     monoidLaws(Monoid.optionMonoid[Boolean], Arbitrary.arbOption[Boolean].arbitrary)
     monoidLaws(Monoid.optionMonoid[String], Arbitrary.arbOption[String].arbitrary)
   }
+
+  behavior of "10.3 endoMonoid"
+  it should "obey the monoid laws" in {
+    def isEqual[A](f: A => A, g: A => A)(implicit arb: Arbitrary[A]): Boolean = {
+      forAll("a") { a: A => assert(f(a) == g(a))}
+      true
+    }
+    val booleanFunctionGen =
+      Gen.oneOf[Boolean => Boolean]({x: Boolean => !x}, identity[Boolean] _)
+    monoidLaws(Monoid.endoMonoid[Boolean], booleanFunctionGen, isEqual[Boolean])
+  }
+
 }
