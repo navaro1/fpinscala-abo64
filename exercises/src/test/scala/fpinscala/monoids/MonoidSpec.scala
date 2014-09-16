@@ -39,4 +39,11 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
   it should "obey the monoid laws" in {
     monoidLaws(Monoid.booleanAnd, Arbitrary.arbBool.arbitrary)
   }
+
+  behavior of "10.2 optionMonoid"
+  it should "obey the monoid laws" in {
+    monoidLaws(Monoid.optionMonoid[Int], Arbitrary.arbOption[Int].arbitrary)
+    monoidLaws(Monoid.optionMonoid[Boolean], Arbitrary.arbOption[Boolean].arbitrary)
+    monoidLaws(Monoid.optionMonoid[String], Arbitrary.arbOption[String].arbitrary)
+  }
 }
