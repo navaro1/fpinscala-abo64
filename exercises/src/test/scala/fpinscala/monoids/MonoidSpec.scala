@@ -5,6 +5,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
+import java.util.concurrent.Executors
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonoidSpec extends FlatSpec with PropertyChecks {
@@ -96,6 +97,17 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     forAll("ints") { ints: List[Int] =>
       val intsAsStrings = ints.map(_.toString).toIndexedSeq
       assert(Monoid.foldMapV(intsAsStrings, Monoid.intAddition)(_.toInt) == ints.sum)
+    }
+  }
+
+  behavior of "10.8 parFoldMap"
+  it should "work" in {
+    import fpinscala.parallelism.Nonblocking.Par
+    val es = Executors.newFixedThreadPool(4)
+    forAll("ints") { ints: List[Int] =>
+      val intsAsStrings = ints.map(_.toString).toIndexedSeq
+      val parSum = Monoid.parFoldMap(intsAsStrings, Monoid.intAddition)(_.toInt)
+      assert(Par.run(es)(parSum) == ints.sum)
     }
   }
 }

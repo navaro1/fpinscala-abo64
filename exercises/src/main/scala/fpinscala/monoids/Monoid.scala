@@ -116,7 +116,7 @@ object Monoid {
 //    concatenate(as.map(f), m)
     as.foldLeft(m.zero)((b, a) => m.op(b, f(a)))
 
-// copied from the answers:
+// [copied from the answers:]
   // The function type `(A, B) => B`, when curried, is `A => (B => B)`.
   // And of course, `B => B` is a monoid for any `B` (via function composition).
   def foldRight[A, B](as: List[A])(z: B)(f: (A, B) => B): B =
@@ -146,11 +146,16 @@ object Monoid {
   case class Stub(chars: String) extends WC
   case class Part(lStub: String, words: Int, rStub: String) extends WC
 
-  def par[A](m: Monoid[A]): Monoid[Par[A]] = 
-    sys.error("todo")
+  def par[A](m: Monoid[A]): Monoid[Par[A]] = new Monoid[Par[A]] {
+    def zero = Par.unit(m.zero)
+    def op(a: Par[A], b: Par[A]) = a.map2(b)(m.op)
+  }
 
-  def parFoldMap[A,B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): Par[B] = 
-    sys.error("todo") 
+  // we perform the mapping and the reducing both in parallel
+  def parFoldMap[A,B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): Par[B] =
+    Par.parMap(v)(f).flatMap { bs =>
+      foldMapV(bs, par(m))(b => Par.lazyUnit(b))
+    }
 
 //  val wcMonoid: Monoid[WC] = new Monoid[WC] {
 //    def op(a1: WC, a2: WC) = a1 && a2
