@@ -61,11 +61,12 @@ object Monoid {
   import Prop._
   def monoidLaws[A](m: Monoid[A], gen: Gen[A]): Prop = {
     import m._
+    val genZero = Gen.union(gen, Gen.unit(zero)) // zero as interesting corner case
     // Associativity
     forAll(for {
-      x <- gen
-      y <- gen
-      z <- gen
+      x <- genZero
+      y <- genZero
+      z <- genZero
     } yield (x, y, z)) { case (x, y, z) =>
       op(x, op(y, z)) == op(op(x, y), z) } &&
     // Identity
