@@ -90,4 +90,12 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(Monoid.foldLeft(ints)(0)(plus) == ints.sum)
     }
   }
+
+  behavior of "10.7 foldMapV"
+  it should "work" in {
+    forAll("ints") { ints: List[Int] =>
+      val intsAsStrings = ints.map(_.toString).toIndexedSeq
+      assert(Monoid.foldMapV(intsAsStrings, Monoid.intAddition)(_.toInt) == ints.sum)
+    }
+  }
 }
