@@ -80,13 +80,22 @@ object Monoid {
     def intGen(max: Int) = Gen.choose(0, max)
     def listGen[A](gen: Gen[A]) = gen.listOfN(intGen(10))
     val stringGen = intGen(10) flatMap(Gen.stringN)
+    def optionGen[A](gen: Gen[A]): Gen[Option[A]] =
+      for {
+        b <- Gen.boolean
+        a <- gen
+        o = if (b) Some(a) else None
+      } yield o
 
     val monoidProps =
       monoidLaws(stringMonoid, stringGen) &&
       monoidLaws(listMonoid[Int], listGen(intGen(100))) &&
       monoidLaws(listMonoid[String], listGen(stringGen)) &&
       monoidLaws(intAddition, intGen(100)) &&
-      monoidLaws(intMultiplication, intGen(100))
+      monoidLaws(intMultiplication, intGen(100)) &&
+      monoidLaws(booleanOr, Gen.boolean) &&
+      monoidLaws(booleanAnd, Gen.boolean) &&
+      monoidLaws(optionMonoid[Int], optionGen(intGen(10)))
 
     run(monoidProps)
   }
