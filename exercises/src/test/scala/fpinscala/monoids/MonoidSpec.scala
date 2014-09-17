@@ -67,4 +67,27 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     assert(Monoid.testMonoidLaws(10) == Passed)
   }
 
+  behavior of "10.5 foldMap"
+  it should "work" in {
+    forAll("ints") { ints: List[Int] =>
+      val intsAsStrings = ints map(_.toString)
+      assert(Monoid.foldMap(intsAsStrings, Monoid.intAddition)(_.toInt) == ints.sum)
+    }
+  }
+
+  behavior of "10.6.1 foldRight"
+  it should "work" in {
+    val plus = (_:Int) + (_:Int)
+    forAll("ints") { ints: List[Int] =>
+      assert(Monoid.foldRight(ints)(0)(plus) == ints.sum)
+    }
+  }
+
+  behavior of "10.6.2 foldLeft"
+  it should "work" in {
+    val plus = (_:Int) + (_:Int)
+    forAll("ints") { ints: List[Int] =>
+      assert(Monoid.foldLeft(ints)(0)(plus) == ints.sum)
+    }
+  }
 }

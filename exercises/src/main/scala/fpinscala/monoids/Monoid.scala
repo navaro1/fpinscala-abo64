@@ -45,6 +45,13 @@ object Monoid {
     val zero = None
   }
 
+  // We can get the dual of any monoid just by flipping the `op`.
+  def dual[A](m: Monoid[A]): Monoid[A] = new Monoid[A] {
+    def op(x: A, y: A): A = m.op(y, x)
+    val zero = m.zero
+  }
+
+
   def endoMonoid[A]: Monoid[A => A] = new Monoid[A => A] {
     def op(a1: A => A, a2: A => A) = a1 compose a2
     val zero = (a: A) => a
@@ -103,16 +110,24 @@ object Monoid {
   def trimMonoid(s: String): Monoid[String] = sys.error("todo")
 
   def concatenate[A](as: List[A], m: Monoid[A]): A =
-    sys.error("todo")
+    as.foldLeft(m.zero)(m.op) // 179
 
   def foldMap[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
-    sys.error("todo")
+//    concatenate(as.map(f), m)
+    as.foldLeft(m.zero)((b, a) => m.op(b, f(a)))
 
+// copied from the answers:
+  // The function type `(A, B) => B`, when curried, is `A => (B => B)`.
+  // And of course, `B => B` is a monoid for any `B` (via function composition).
   def foldRight[A, B](as: List[A])(z: B)(f: (A, B) => B): B =
-    sys.error("todo")
+    foldMap(as, endoMonoid[B])(f.curried)(z)
 
+  // Folding to the left is the same except we flip the arguments to
+  // the function `f` to put the `B` on the correct side.
+  // Then we have to also "flip" the monoid so that it operates from left to right.
   def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B =
-    sys.error("todo")
+    foldMap(as, dual(endoMonoid[B]))(a => b => f(b, a))(z)
+
 
   def foldMapV[A, B](as: IndexedSeq[A], m: Monoid[B])(f: A => B): B =
     sys.error("todo")
