@@ -110,4 +110,15 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(Par.run(es)(parSum) == ints.sum)
     }
   }
+
+  behavior of "10.9 ordered"
+  it should "work" in {
+    assert(Monoid.ordered(IndexedSeq()))
+    assert(Monoid.ordered(IndexedSeq(1)))
+    assert(Monoid.ordered(IndexedSeq(-2, 0, 1, 3, 5)))
+    assert(Monoid.ordered(IndexedSeq(-2, 0, 3, 1, 6)) == false)
+    forAll("ints") {ints: Seq[Int] =>
+      assert(Monoid.ordered(ints.toIndexedSeq) == (ints == ints.sorted))
+    }
+  }
 }
