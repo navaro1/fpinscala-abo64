@@ -123,7 +123,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
   }
 
   behavior of "10.10 wcMonoid"
-  it should "work" in {
+  it should "obey the monoid laws" in {
     import fpinscala.testing.Gen
     import fpinscala.testing.Prop.Passed
     def intGen(max: Int) = Gen.choose(0, max)
@@ -138,5 +138,16 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     val wcGen: Gen[Monoid.WC] = Gen.union(stubGen, partGen)
     val laws = Monoid.monoidLaws(Monoid.wcMonoid, wcGen)
     assert(Monoid.run(laws, 10) == Passed)
+  }
+
+  behavior of "10.11 countWords"
+  it should "work" in {
+    def wordCount(s: String) = {
+      def whitespaceCount = s.filter(Character.isWhitespace).size
+      if (s.isEmpty) 0 else whitespaceCount + 1
+    }
+    forAll("s") { s: String =>
+      assert(Monoid.countWords(s) == wordCount(s))
+    }
   }
 }

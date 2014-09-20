@@ -191,7 +191,7 @@ object Monoid {
     }
   }
 
-  def count(s: String): Int = {
+  def countWords(s: String): Int = {
     // A single character's count. Whitespace does not count,
     // and non-whitespace starts a new Stub.
     def wc(c: Char): WC =
