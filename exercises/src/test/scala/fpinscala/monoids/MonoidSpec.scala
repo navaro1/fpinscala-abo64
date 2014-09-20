@@ -121,4 +121,22 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(Monoid.ordered(ints.toIndexedSeq) == (ints == ints.sorted))
     }
   }
+
+  behavior of "10.10 wcMonoid"
+  it should "work" in {
+    import fpinscala.testing.Gen
+    import fpinscala.testing.Prop.Passed
+    def intGen(max: Int) = Gen.choose(0, max)
+    def listGen[A](gen: Gen[A]) = gen.listOfN(intGen(10))
+    val stringGen = intGen(10) flatMap(Gen.stringN)
+    val stubGen = stringGen map(Monoid.Stub(_))
+    val partGen = for {
+      lStub <- stringGen
+      words <- intGen(10)
+      rStub <- stringGen
+    } yield Monoid.Part(lStub, words, rStub)
+    val wcGen: Gen[Monoid.WC] = Gen.union(stubGen, partGen)
+    val laws = Monoid.monoidLaws(Monoid.wcMonoid, wcGen)
+    assert(Monoid.run(laws, 10) == Passed)
+  }
 }

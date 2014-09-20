@@ -80,9 +80,13 @@ object Monoid {
       op(a, zero) == a && op(zero, a) == a)
   }
 
-  def testMonoidLaws(testCases: TestCases): Result = {
+  
+  def run(prop: Prop, testCases: TestCases): Result = {
     import fpinscala.state.RNG.Simple
-    def run(prop: Prop) = prop.run(testCases, Simple(0))
+    prop.run(testCases, Simple(0))
+  }
+
+  def testMonoidLaws(testCases: TestCases): Result = {
     def intGen(max: Int) = Gen.choose(0, max)
     def listGen[A](gen: Gen[A]) = gen.listOfN(intGen(10))
     val stringGen = intGen(10) flatMap(Gen.stringN)
@@ -103,7 +107,7 @@ object Monoid {
       monoidLaws(booleanAnd, Gen.boolean) &&
       monoidLaws(optionMonoid[Int], optionGen(intGen(10)))
 
-    run(monoidProps)
+    run(monoidProps, testCases)
   }
 
   def trimMonoid(s: String): Monoid[String] = sys.error("todo")
