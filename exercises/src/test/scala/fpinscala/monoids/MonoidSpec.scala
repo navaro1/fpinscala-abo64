@@ -150,4 +150,34 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(Monoid.countWords(s) == wordCount(s))
     }
   }
+
+  val plus = (_:Int) + (_:Int)
+  private def testFoldable[F[_]](foldable: Foldable[F], f: List[Int] => F[Int]) = {
+    forAll("ints") { ints: List[Int] =>
+      val intsF = f(ints)
+      val sum = ints.sum
+      assert(foldable.foldRight(intsF)(0)(plus) == sum)
+      assert(foldable.foldLeft(intsF)(0)(plus) == sum)
+      assert(foldable.foldMap(intsF)(_.toString)(Monoid.stringMonoid) ==
+        ints.map(_.toString).fold("")(_ + _))
+      assert(foldable.concatenate(intsF)(Monoid.intAddition) == sum)
+      assert(foldable.toList(intsF) == ints)
+    }
+    
+  }
+
+  behavior of "10.12.1 ListFoldable"
+  it should "work" in {
+    testFoldable(ListFoldable, identity)
+  }
+
+  behavior of "10.12.2 IndexedSeqFoldable"
+  it should "work" in {
+    testFoldable(IndexedSeqFoldable, _.toIndexedSeq)
+  }
+
+  behavior of "10.12.3 StreamFoldable"
+  it should "work" in {
+    testFoldable(StreamFoldable, _.toStream)
+  }
 }
