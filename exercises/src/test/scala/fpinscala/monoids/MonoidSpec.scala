@@ -2,6 +2,7 @@ package fpinscala.monoids
 
 import org.junit.runner.RunWith
 import org.scalacheck.Arbitrary
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
@@ -163,7 +164,6 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(foldable.concatenate(intsF)(Monoid.intAddition) == sum)
       assert(foldable.toList(intsF) == ints)
     }
-    
   }
 
   behavior of "10.12.1 ListFoldable"
@@ -179,5 +179,47 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
   behavior of "10.12.3 StreamFoldable"
   it should "work" in {
     testFoldable(StreamFoldable, _.toStream)
+  }
+
+  behavior of "10.13 TreeFoldable"
+  it should "work" in {
+    implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
+      val maxDepth = 10 // to prevent StackOverflows
+
+      def createLeaf: Gen[Tree[T]] = arbitrary[T] map (Leaf(_))
+      def createBranch(depth: Int): Gen[Tree[T]] = {
+        for {
+          lIsLeaf <- arbitrary[Boolean]
+          rIsLeaf <- arbitrary[Boolean]
+          l <- createTree(lIsLeaf, depth)
+          r <- createTree(rIsLeaf, depth)
+        } yield Branch(l, r)
+      }
+      def createTree(isLeaf: Boolean, depth: Int): Gen[Tree[T]] =
+        if (isLeaf || depth >= maxDepth) createLeaf else createBranch(depth + 1)
+
+      Arbitrary {
+        arbitrary[Boolean] flatMap { createTree(_, 0) }
+      }
+    }
+
+  def treeSum(ints: Tree[Int]): Int = ints match {
+    case Leaf(i) => i
+    case Branch(l,r) => treeSum(l) + treeSum(r)
+  }
+  def treeList[A](as: Tree[A]): List[A] = as match {
+    case Leaf(a) => List(a)
+    case Branch(l,r) => treeList(l) ::: treeList(r)
+  }
+
+  val foldable = TreeFoldable
+  forAll("ints") { ints: Tree[Int] =>
+      val sum = treeSum(ints)
+      assert(foldable.foldRight(ints)(0)(plus) == sum)
+      assert(foldable.foldLeft(ints)(0)(plus) == sum)
+      assert(foldable.foldMap(ints)(_.toInt)(Monoid.intAddition) == sum)
+      assert(foldable.concatenate(ints)(Monoid.intAddition) == sum)
+      assert(foldable.toList(ints) == treeList(ints))
+    }
   }
 }
