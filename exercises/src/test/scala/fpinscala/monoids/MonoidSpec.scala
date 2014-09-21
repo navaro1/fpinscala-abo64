@@ -144,10 +144,10 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
   behavior of "10.11 countWords"
   it should "work" in {
     def wordCount(s: String) = {
-      def whitespaceCount = s.filter(Character.isWhitespace).size
-      if (s.isEmpty) 0 else whitespaceCount + 1
+      val s1 = s.trim
+      if (s1 == "") 0 else s1.split("""\s+""").size
     }
-    forAll("s") { s: String =>
+    forAll(Gen.alphaStr label "s") { s: String =>
       assert(Monoid.countWords(s) == wordCount(s))
     }
   }
@@ -220,6 +220,19 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(foldable.foldMap(ints)(_.toInt)(Monoid.intAddition) == sum)
       assert(foldable.concatenate(ints)(Monoid.intAddition) == sum)
       assert(foldable.toList(ints) == treeList(ints))
+    }
+  }
+
+  behavior of "10.14 OptionFoldable"
+  it should "work" in {
+    val foldable = OptionFoldable
+    forAll("ints") { ints: Option[Int] =>
+      val sum = ints.fold(0)(_ + 0)
+      assert(foldable.foldRight(ints)(0)(plus) == sum)
+      assert(foldable.foldLeft(ints)(0)(plus) == sum)
+      assert(foldable.foldMap(ints)(_.toInt)(Monoid.intAddition) == sum)
+      assert(foldable.concatenate(ints)(Monoid.intAddition) == sum)
+      assert(foldable.toList(ints) == ints.fold(List[Int]())(List(_)))
     }
   }
 }
