@@ -252,4 +252,9 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "10.16 productMonoid"
+  it should "work" in {
+    val pMonoid = Monoid.productMonoid(Monoid.intAddition, Monoid.intAddition)
+    checkMonoidLaws[(Int,Int)](pMonoid, Arbitrary.arbTuple2[Int,Int].arbitrary)
+  }
 }
