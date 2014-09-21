@@ -162,7 +162,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(foldable.foldMap(intsF)(_.toString)(Monoid.stringMonoid) ==
         ints.map(_.toString).fold("")(_ + _))
       assert(foldable.concatenate(intsF)(Monoid.intAddition) == sum)
-      assert(foldable.toList(intsF) == ints)
+//      assert(foldable.toList(intsF) == ints)
     }
   }
 
@@ -181,35 +181,36 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     testFoldable(StreamFoldable, _.toStream)
   }
 
+  private implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
+    val maxDepth = 10 // to prevent StackOverflows
+
+    def createLeaf: Gen[Tree[T]] = arbitrary[T] map (Leaf(_))
+    def createBranch(depth: Int): Gen[Tree[T]] = {
+      for {
+        lIsLeaf <- arbitrary[Boolean]
+        rIsLeaf <- arbitrary[Boolean]
+        l <- createTree(lIsLeaf, depth)
+        r <- createTree(rIsLeaf, depth)
+      } yield Branch(l, r)
+    }
+    def createTree(isLeaf: Boolean, depth: Int): Gen[Tree[T]] =
+      if (isLeaf || depth >= maxDepth) createLeaf else createBranch(depth + 1)
+
+    Arbitrary {
+      arbitrary[Boolean] flatMap { createTree(_, 0) }
+    }
+  }
+
+  private def treeList[A](as: Tree[A]): List[A] = as match {
+    case Leaf(a) => List(a)
+    case Branch(l,r) => treeList(l) ::: treeList(r)
+  }
+
   behavior of "10.13 TreeFoldable"
   it should "work" in {
-    implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
-      val maxDepth = 10 // to prevent StackOverflows
-
-      def createLeaf: Gen[Tree[T]] = arbitrary[T] map (Leaf(_))
-      def createBranch(depth: Int): Gen[Tree[T]] = {
-        for {
-          lIsLeaf <- arbitrary[Boolean]
-          rIsLeaf <- arbitrary[Boolean]
-          l <- createTree(lIsLeaf, depth)
-          r <- createTree(rIsLeaf, depth)
-        } yield Branch(l, r)
-      }
-      def createTree(isLeaf: Boolean, depth: Int): Gen[Tree[T]] =
-        if (isLeaf || depth >= maxDepth) createLeaf else createBranch(depth + 1)
-
-      Arbitrary {
-        arbitrary[Boolean] flatMap { createTree(_, 0) }
-      }
-    }
-
   def treeSum(ints: Tree[Int]): Int = ints match {
     case Leaf(i) => i
     case Branch(l,r) => treeSum(l) + treeSum(r)
-  }
-  def treeList[A](as: Tree[A]): List[A] = as match {
-    case Leaf(a) => List(a)
-    case Branch(l,r) => treeList(l) ::: treeList(r)
   }
 
   val foldable = TreeFoldable
@@ -219,7 +220,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(foldable.foldLeft(ints)(0)(plus) == sum)
       assert(foldable.foldMap(ints)(_.toInt)(Monoid.intAddition) == sum)
       assert(foldable.concatenate(ints)(Monoid.intAddition) == sum)
-      assert(foldable.toList(ints) == treeList(ints))
+//      assert(foldable.toList(ints) == treeList(ints))
     }
   }
 
@@ -232,7 +233,23 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       assert(foldable.foldLeft(ints)(0)(plus) == sum)
       assert(foldable.foldMap(ints)(_.toInt)(Monoid.intAddition) == sum)
       assert(foldable.concatenate(ints)(Monoid.intAddition) == sum)
-      assert(foldable.toList(ints) == ints.fold(List[Int]())(List(_)))
+//      assert(foldable.toList(ints) == ints.fold(List[Int]())(List(_)))
     }
   }
+
+  behavior of "10.15 Foldable.toList"
+  it should "work" in {
+    forAll("ints") { ints: List[Int] =>
+      assert(ListFoldable.toList(ints) == ints)
+      assert(IndexedSeqFoldable.toList(ints.toIndexedSeq) == ints)
+      assert(StreamFoldable.toList(ints.toStream) == ints)
+    }
+    forAll("ints") { ints: Tree[Int] =>
+      assert(TreeFoldable.toList(ints) == treeList(ints))
+    }
+    forAll("ints") { ints: Option[Int] =>
+      assert(OptionFoldable.toList(ints) == ints.fold(List[Int]())(List(_)))
+    }
+  }
+
 }
