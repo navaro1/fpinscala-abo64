@@ -113,6 +113,7 @@ object Par {
   // since Scala 2.10: implicit class instead of implicit converter function
   implicit class ParOps[A](p: Par[A]) {
     def run(s: ExecutorService): Future[A] = Par.run(s)(p)
+    def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(p)(f)
   }
 }
 

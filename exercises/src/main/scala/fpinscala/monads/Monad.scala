@@ -60,9 +60,18 @@ object Monad {
       ma flatMap f
   }
 
-  val parMonad: Monad[Par] = ???
+  val parMonad: Monad[Par] = new Monad[Par] {
+    override def unit[A](a: => A): Par[A] = Par.unit(a)
+    override def flatMap[A,B](ma: Par[A])(f: A => Par[B]): Par[B] =
+      ma flatMap f
+  }
 
-  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = ???
+  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = new Monad[P] {
+    import p._
+    override def unit[A](a: => A): P[A] = p.succeed(a)
+    override def flatMap[A,B](ma: P[A])(f: A => P[B]): P[B] =
+      ma flatMap (f)
+  }
 
   val optionMonad: Monad[Option] = ???
 
