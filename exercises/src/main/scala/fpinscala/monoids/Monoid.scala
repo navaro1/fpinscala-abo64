@@ -202,13 +202,17 @@ object Monoid {
 
   def productMonoid[A,B](A: Monoid[A], B: Monoid[B]): Monoid[(A, B)] =
     new Monoid[(A, B)] {
-      val zero = (A.zero, B.zero)
-      def op(x: (A, B), y: (A, B)) =
+      override val zero = (A.zero, B.zero)
+      override def op(x: (A, B), y: (A, B)) =
         (A.op(x._1, y._1), B.op(x._2, y._2))
   }
 
   def functionMonoid[A,B](B: Monoid[B]): Monoid[A => B] =
-    sys.error("todo")
+    new Monoid[A => B] {
+      override val zero = (_:A) => B.zero
+      override def op(f: A => B, g: A => B) =
+         a => B.op(f(a), g(a))
+    }
 
   def mapMergeMonoid[K,V](V: Monoid[V]): Monoid[Map[K, V]] =
     sys.error("todo")

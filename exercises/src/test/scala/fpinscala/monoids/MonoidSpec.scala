@@ -52,15 +52,16 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     checkMonoidLaws(Monoid.optionMonoid[String], Arbitrary.arbOption[String].arbitrary)
   }
 
+  private def isEqual[A,B](f: A => B, g: A => B)(implicit arb: Arbitrary[A]): Boolean = {
+    forAll("a") { a: A => assert(f(a) == g(a)) }
+    true
+  }
+
   behavior of "10.3 endoMonoid"
   it should "obey the monoid laws" in {
-    def isEqual[A](f: A => A, g: A => A)(implicit arb: Arbitrary[A]): Boolean = {
-      forAll("a") { a: A => assert(f(a) == g(a))}
-      true
-    }
     val booleanFunctionGen =
       Gen.oneOf[Boolean => Boolean]({x: Boolean => !x}, identity[Boolean] _)
-    checkMonoidLaws(Monoid.endoMonoid[Boolean], booleanFunctionGen, isEqual[Boolean])
+    checkMonoidLaws(Monoid.endoMonoid[Boolean], booleanFunctionGen, isEqual[Boolean,Boolean])
   }
 
   behavior of "10.4 monoidLaws"
@@ -262,5 +263,13 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
   it should "work" in {
     val pMonoid = Monoid.productMonoid(Monoid.intAddition, Monoid.intAddition)
     checkMonoidLaws[(Int,Int)](pMonoid, Arbitrary.arbTuple2[Int,Int].arbitrary)
+  }
+
+  behavior of "10.17 functionMonoid"
+  it should "obey the monoid laws" in {
+    val fMonoid = Monoid.functionMonoid[Int,String](Monoid.stringMonoid)
+    val functionGen =
+      Gen.oneOf[Int => String]({x: Int => x.toString}, {x: Int => x.toString + "x"})
+    checkMonoidLaws[Int => String](fMonoid, functionGen, isEqual[Int,String] _)
   }
 }
