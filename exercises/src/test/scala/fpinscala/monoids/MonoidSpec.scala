@@ -143,11 +143,17 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
 
   behavior of "10.11 countWords"
   it should "work" in {
+    val strGen: Gen[String] = {
+      val whitespaceCharGen = Gen.oneOf(9.toChar, 10.toChar, 32.toChar)
+      val nonWhitespaceCharGen = Gen.choose(33.toChar, 127.toChar)
+      val charGen = Gen.frequency((1, whitespaceCharGen), (9, nonWhitespaceCharGen))
+      Gen.listOf(charGen).map(_.mkString)
+    }
     def wordCount(s: String) = {
       val s1 = s.trim
       if (s1 == "") 0 else s1.split("""\s+""").size
     }
-    forAll(Gen.alphaStr label "s") { s: String =>
+    forAll(strGen label "s") { s: String =>
       assert(Monoid.countWords(s) == wordCount(s))
     }
   }
