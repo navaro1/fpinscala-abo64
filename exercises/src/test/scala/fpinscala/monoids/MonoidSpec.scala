@@ -272,4 +272,18 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       Gen.oneOf[Int => String]({x: Int => x.toString}, {x: Int => x.toString + "x"})
     checkMonoidLaws[Int => String](fMonoid, functionGen, isEqual[Int,String] _)
   }
+
+  behavior of "10.18 bag"
+  it should "work" in {
+    assert(Monoid.bag(Vector("a", "rose", "is", "a", "rose")) ==
+      Map("a" -> 2, "rose" -> 2, "is" -> 1))
+
+    val words = "Yesterday all my troubles seemed so far away".split(" ").toSeq
+    val wordGen = Gen.oneOf(words)
+    val sentenceGen = Gen.listOf(wordGen)
+    forAll(sentenceGen label "as") { as: List[String] =>
+      val wordBag = as.groupBy(identity).mapValues(_.size)
+      assert(Monoid.bag(as.toIndexedSeq) == wordBag)
+    }
+  }
 }
