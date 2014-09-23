@@ -1,31 +1,45 @@
 package fpinscala.laziness
 
 import java.math.MathContext
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
 
 object GoogleBillboardPuzzle extends App {
 
+  // Kestrel combinator: perform some side effect before returning result
   private def kestrel[A](x: A)(f: A => Unit): A = { f(x); x }
 
-  val precision = new MathContext(10000)
-  val zero = BigDecimal(0, precision)
-  val one = BigDecimal(1, precision)
+  private def timed[A](name: String)(block: => A): A = {
+    val start = System.currentTimeMillis
+    kestrel(block) { value =>
+      val duration = Duration(System.currentTimeMillis -start, TimeUnit.MILLISECONDS)
+      println(s"$name: $value [$duration]")
+    }
+  }
 
-  def inverse(n: BigDecimal): BigDecimal = //kestrel(one / n)(_ => println(n))
-    one / n
+  // # of iterations required to get good enough precision of Euler's number
+  val EulerIterations = 75
+
+  val DecimalPrecision = new MathContext(10000)
+  val Zero = BigDecimal(0, DecimalPrecision)
+  val One = BigDecimal(1, DecimalPrecision)
+
+  def inverse(n: BigDecimal): BigDecimal = //kestrel(One / n)(_ => println(n))
+    One / n
 
   def factorial(n: Int): BigDecimal =
-    if (n == 0) one else (1 to n).foldLeft(one)(_ * _)
+    if (n == 0) One else (1 to n).foldLeft(One)(_ * _)
 
   def addEulerSeriesElement(b: BigDecimal, i: Int): BigDecimal =
     b + inverse(factorial(i))
 
-  def euler(n: Int): BigDecimal = {
-    (0 to n).toSeq.foldLeft(zero)(addEulerSeriesElement)
+  def calculateEuler(n: Int): BigDecimal = {
+    (0 to n).toSeq.foldLeft(Zero)(addEulerSeriesElement)
   }
 
   /** Stream of BigDecimals approaching Euler's number */
   def eulerStream: Stream[BigDecimal] =
-    Stream.unfold((0, one)) {
+    Stream.unfold((0, Zero)) {
       case (n, e) => {
         val euler = addEulerSeriesElement(e, n)
         Some((euler, (n + 1, euler)))
@@ -40,12 +54,10 @@ object GoogleBillboardPuzzle extends App {
   }
   //(0 to 100) foreach { x => println(s"$x: ${isPrime(x)}")}
 
-  val eulerNumber: BigDecimal = //euler(100)
-    eulerStream.drop(100).headOption.get
-//  println(eulerNumber)
-
   def findFirstPrime(str: String, digits: Int): Option[String] = {
-    str.sliding(digits).find(s => isPrime(s.toLong))
+    str.sliding(digits).find(s =>
+      s.length == digits && //kestrel(isPrime(s.toLong))(b => if (b) println(s)))
+      isPrime(s.toLong))
   }
 
   def decimalsAsString(n: BigDecimal) = {
@@ -54,8 +66,27 @@ object GoogleBillboardPuzzle extends App {
     if (decPos > -1) str.substring(decPos + 1) else ""
   }
 
-  val solution = findFirstPrime(decimalsAsString(eulerNumber), 10)
-  println(s"solution: $solution")
-  assert(solution.get.toLong == 7427466391L)
-  // solution: 7427466391
+  def findStreamSolution(digits: Int) = {
+    var n = 0
+    def moreIterations = kestrel(n < EulerIterations)(_ => n += 1) // make sure that precision is high enough
+    val solutionStream = eulerStream map decimalsAsString map(findFirstPrime(_, digits))
+    solutionStream.dropWhile(moreIterations || _.isEmpty).headOption.get
+  }
+
+  timed("Euler w/ loop  ")(calculateEuler(EulerIterations))
+  timed("Euler w/ Stream")(eulerStream.drop(EulerIterations).headOption.get)
+
+  val ExpectedSolution = 7427466391L
+  def checkSolution(solution: Option[String]): Unit =
+    assert(solution.get.toLong == ExpectedSolution)
+
+  val solution = timed("solution w/ findFirstPrime"){
+    findFirstPrime(decimalsAsString(calculateEuler(EulerIterations)), 10)
+  }
+  checkSolution(solution)
+
+  val streamSolution = timed("solution w/ mapped Stream "){
+    findStreamSolution(10)
+  }
+  checkSolution(streamSolution)
 }
