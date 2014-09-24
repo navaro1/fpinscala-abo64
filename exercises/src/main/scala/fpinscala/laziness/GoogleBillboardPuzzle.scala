@@ -6,6 +6,11 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.math.BigDecimal.int2bigDecimal
 
+/**
+ * Solutions with Seq.fold and Stream.unfold for this problem:
+ * http://mathworld.wolfram.com/news/2004-10-13/google/
+ * http://google-tale.blogspot.de/2008/07/google-billboard-puzzle.html
+ */
 object GoogleBillboardPuzzle extends App {
 
   // Kestrel combinator: perform some side effect before returning result
