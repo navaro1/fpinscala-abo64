@@ -34,11 +34,15 @@ trait Monad[M[_]] extends Functor[M] {
   def map2[A,B,C](ma: M[A], mb: M[B])(f: (A, B) => C): M[C] =
     flatMap(ma)(a => map(mb)(b => f(a, b)))
 
-  def sequence[A](lma: List[M[A]]): M[List[A]] = ???
+  def sequence[A](lma: List[M[A]]): M[List[A]] =
+    lma.foldRight(unit(List[A]()))((ma, mla) => map2(ma, mla)(_ :: _))
 
-  def traverse[A,B](la: List[A])(f: A => M[B]): M[List[B]] = ???
+  def traverse[A,B](la: List[A])(f: A => M[B]): M[List[B]] =
+    la.foldRight(unit(List[B]()))((a, mlb) => map2(f(a), mlb)(_ :: _))
 
-  def replicateM[A](n: Int, ma: M[A]): M[List[A]] = ???
+  def replicateM[A](n: Int, ma: M[A]): M[List[A]] =
+//    sequence(List.fill(n)(ma))
+    if (n <= 0) unit(List[A]()) else map2(ma, replicateM(n - 1, ma))(_ :: _)
 
   def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] = ???
 
@@ -93,14 +97,17 @@ object Monad {
 
   def stateMonad[S] = ???
 
-  val idMonad: Monad[Id] = ???
+  val idMonad: Monad[Id] = new Monad[Id] {
+    def unit[A](a: => A) = Id(a)
+    override def flatMap[A,B](ida: Id[A])(f: A => Id[B]): Id[B] = ida flatMap f
+  }
 
   def readerMonad[R] = ???
 }
 
 case class Id[A](value: A) {
-  def map[B](f: A => B): Id[B] = ???
-  def flatMap[B](f: A => Id[B]): Id[B] = ???
+  def map[B](f: A => B): Id[B] = Id(f(value))
+  def flatMap[B](f: A => Id[B]): Id[B] = f(value)
 }
 
 object Reader {

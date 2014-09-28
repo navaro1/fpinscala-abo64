@@ -21,7 +21,7 @@ object GoogleBillboardPuzzle extends App {
   private def timed[A](name: String)(block: => A): A = {
     val start = System.currentTimeMillis
     kestrel(block) { value =>
-      val duration = Duration(System.currentTimeMillis -start, TimeUnit.MILLISECONDS)
+      val duration = Duration(System.currentTimeMillis - start, TimeUnit.MILLISECONDS)
       println(s"$name: $value [$duration]")
     }
   }

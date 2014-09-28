@@ -40,6 +40,11 @@ trait Stream[+A] {
     else Stream.empty
   }
 
+  def take1(n: Int): Stream[A] = this match {
+    case Cons(h,t) if n > 0 => cons(h(), t().take(n-1))
+    case _ => Stream.empty
+  }
+
   def takeViaUnfold(n: Int): Stream[A] =
     unfold((this,n)) {
       case (Cons(h, t), n) if (n > 0) => Some((h()), (t(), n-1))
