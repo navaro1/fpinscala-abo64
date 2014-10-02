@@ -114,6 +114,7 @@ object Par {
   implicit class ParOps[A](p: Par[A]) {
     def run(s: ExecutorService): Future[A] = Par.run(s)(p)
     def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(p)(f)
+    def map[B](f: A => B): Par[B] = Par.map(p)(f)
   }
 }
 
@@ -127,4 +128,11 @@ object Examples {
       sum(l) + sum(r) // Recursively sum both halves and add the results together.
     }
 
+  def parCountWords(paragraphs: List[String]): Par[Int] = {
+    val wordPattern = """(?U)\b\w+\b""".r
+    def countWords(s: String): Par[Int] = Par.lazyUnit(wordPattern.findAllIn(s).size)
+
+    val parCounts = paragraphs.map(countWords)
+    Par.sequence(parCounts) map(_.sum)
+  }
 }

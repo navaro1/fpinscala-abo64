@@ -236,4 +236,28 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
       assertAsync
     }
   }
+
+  behavior of "parCountWords"
+  it should "work synchronously for empty List" in {
+    eventually {
+      assert(Examples.parCountWords(List()).get == 0)
+      assertSync
+    }
+  }
+
+  it should "work asynchronously for non-empty List" in {
+    val text =
+      """|Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut 
+         |labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores 
+         |et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. 
+         |Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut 
+         |labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores 
+         |et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.""".stripMargin.split("\\n").toList
+    val wordCount = text.map(_.split("[ ,!.\\n]+").size).sum
+    val parWordCount = Examples.parCountWords(text)
+    eventually {
+      assert(parWordCount.get == wordCount)
+      assertAsync
+    }
+  }
 }
