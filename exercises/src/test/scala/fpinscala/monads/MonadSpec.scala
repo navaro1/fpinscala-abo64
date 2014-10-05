@@ -8,6 +8,15 @@ import Monad._
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonadSpec extends FlatSpec with PropertyChecks {
 
+//  implicit def toMonadOps[A,M[_] <: Monad[M]](self: M[A]) = new MonadOps(self)
+  private def checkMonadLaw[A,B,C,M[_] <: Monad[M]](x: M[A], f: A => M[B], g: B => M[C]) = {
+//    import x.toMonadOps
+//    x.flatMap(f).flatMap(g) == x.flatMap(a => f(a).flatMap(g))
+//    val fx = x.flatMap(x)(f)
+//    fx.flatMap(fx)(g) == x.flatMap(x)(a => f(a).flatMap(g))
+//    x.compose(x.compose(f, g), h) == compose(f, compose(g, h))
+  }
+
   behavior of "11.1.1 parMonad"
   behavior of "11.1.2 ParserMonad"
   behavior of "11.1.3 optionMonad"
@@ -65,4 +74,33 @@ class MonadSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "11.6.1 filterM in ListMonad"
+  it should "work" in {
+    def evenList(i: Int): List[Boolean] = List(i % 2 == 0)
+    val tests =
+      Table(
+        ("la: List[Int]", "filterM(ma)(evenList"),
+        (List[Int](), List(List[Int]())),
+        (List(1,3), List(List[Int]())),
+        (List(2,4), List(List(2,4))),
+        (List(1,2,3,4), List(List(2,4))))
+    forAll(tests) { (la: List[Int], expected: List[List[Int]]) =>
+      assert(listMonad.filterM(la)(evenList) == expected)
+    }
+  }
+
+  behavior of "11.6.2 filterM in OptionMonad"
+  it should "work" in {
+    def evenOption(i: Int): Option[Boolean] = Some(i % 2 == 0)
+    val tests =
+      Table(
+        ("la: List[Int]", "filterM(ma)(evenOption"),
+        (List[Int](), Some(List[Int]())),
+        (List(1,3), Some(List[Int]())),
+        (List(2,4), Some(List(2,4))),
+        (List(1,2,3,4), Some(List(2,4))))
+    forAll(tests) { (la: List[Int], expected: Some[List[Int]]) =>
+      assert(optionMonad.filterM(la)(evenOption) == expected)
+    }
+  }
 }

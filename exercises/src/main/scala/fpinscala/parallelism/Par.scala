@@ -1,6 +1,7 @@
 package fpinscala.parallelism
 
 import java.util.concurrent._
+import scala.collection.mutable.ArraySeq
 
 object Par {
   type Par[A] = ExecutorService => Future[A]
@@ -20,11 +21,18 @@ object Par {
   
   def map2[A,B,C](a: Par[A], b: Par[B])(f: (A,B) => C): Par[C] = // `map2` doesn't evaluate the call to `f` in a separate logical thread, in accord with our design choice of having `fork` be the sole function in the API for controlling parallelism. We can always do `fork(map2(a,b)(f))` if we want the evaluation of `f` to occur in a separate thread.
     (es: ExecutorService) => {
-      val af = a(es) 
+      val af = a(es)
       val bf = b(es)
       UnitFuture(f(af.get, bf.get)) // This implementation of `map2` does _not_ respect timeouts. It simply passes the `ExecutorService` on to both `Par` values, waits for the results of the Futures `af` and `bf`, applies `f` to them, and wraps them in a `UnitFuture`. In order to respect timeouts, we'd need a new `Future` implementation that records the amount of time spent evaluating `af`, then subtracts that time from the available time allocated for evaluating `bf`.
     }
-  
+
+  def map3[A,B,C,D](a: Par[A], b: Par[B], c: Par[C])(f: (A,B,C) => D): Par[D] = {
+    (es: ExecutorService) => {
+      val cf = c(es)
+      map2(a, b)((a,b) => f(a,b,cf.get))(es)
+    }
+  }
+
   def fork[A](a: => Par[A]): Par[A] = // This is the simplest and most natural implementation of `fork`, but there are some problems with it--for one, the outer `Callable` will block waiting for the "inner" task to complete. Since this blocking occupies a thread in our thread pool, or whatever resource backs the `ExecutorService`, this implies that we're losing out on some potential parallelism. Essentially, we're using two threads when one should suffice. This is a symptom of a more serious problem with the implementation, and we will discuss this later in the chapter.
     es => es.submit(new Callable[A] { 
       def call = a(es).get
@@ -37,6 +45,64 @@ object Par {
     map2(pa, unit(()))((a,_) => f(a))
 
   def sortPar(parList: Par[List[Int]]) = map(parList)(_.sorted)
+
+//  def mergeSort[T](seq: Seq[T])(implicit ord: Ordering[T]): Seq[T] = {
+//    def merge(seq1: Seq[T], seq2: Seq[T]): Seq[T] = {
+//      val len1 = seq1.length 
+//      val len2 = seq2.length
+//      val len = len1+ len2
+//      val arr = new ArraySeq[T](len)
+//      var (i1, i2, ia) = (0, 0, 0)
+//      while (ia < len) {
+//        if (i2 == len2 || (i1 < len1 && ord.lteq(seq1(i1), seq2(i2)))) {
+//          arr(ia) = seq1(i1)
+//          i1 += 1
+//        } else {
+//          arr(ia) = seq2(i2)
+//          i2 += 1
+//        }
+//        ia += 1
+//      }
+//      arr.toSeq
+//    }
+//
+//    val len = seq.length
+//    if (len <= 1) seq
+//    else {
+//      val (left, right) = seq.splitAt(len / 2)
+//      merge(mergeSort(left), mergeSort(right))
+//    }
+//  }
+
+  def mergeSortPar[T](parSeq: Par[Seq[T]])(implicit ord: Ordering[T]): Par[Seq[T]] = {
+    def merge(seq1: Seq[T], seq2: Seq[T]): Seq[T] = {
+      val len1 = seq1.length 
+      val len2 = seq2.length
+      val len = len1+ len2
+      val arr = new ArraySeq[T](len)
+      var (i1, i2, ia) = (0, 0, 0)
+      while (ia < len) {
+        if (i2 == len2 || (i1 < len1 && ord.lteq(seq1(i1), seq2(i2)))) {
+          arr(ia) = seq1(i1)
+          i1 += 1
+        } else {
+          arr(ia) = seq2(i2)
+          i2 += 1
+        }
+        ia += 1
+      }
+      arr.toSeq
+    }
+
+    parSeq flatMap { seq =>
+      val len = seq.length
+      if (len <= 1) Par.unit(seq)
+      else {
+        val (left, right) = seq.splitAt(len / 2)
+        Par.map2(fork(mergeSortPar(Par.unit(left))), fork(mergeSortPar(Par.unit(right))))(merge)
+      }
+    }
+  }
 
   def sequence[A](as: List[Par[A]]): Par[List[A]] = as match {
     case Nil => unit(Nil)

@@ -260,4 +260,28 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
       assertAsync
     }
   }
+
+  behavior of "map3"
+  it should "work synchronously" in {
+    eventually {
+      assert(Par.map3(Par.unit(1), Par.unit(2), Par.unit(3))((a,b,c) => s"$a$b$c").get == "123")
+      assertSync
+    }
+  }
+  it should "work asynchronously" in {
+    eventually {
+      assert(Par.map3(Par.lazyUnit(1), Par.unit(2), Par.unit(3))((a,b,c) => s"$a$b$c").get == "123")
+      assertAsync
+    }
+  }
+
+  behavior of "mergeSortPar"
+  it should "work" in {
+    forAll("as") { ints: List[Int] =>
+      eventually {
+        assert(Par.mergeSortPar(Par.unit[Seq[Int]](ints)).get == ints.sorted)
+//        if (ints.length <= 1) assertSync else assertAsync
+      }
+    }
+  }
 }

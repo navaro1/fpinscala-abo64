@@ -25,7 +25,7 @@ object Functor {
   }
 }
 
-trait Monad[M[_]] extends Functor[M] {
+trait Monad[M[_]] extends Functor[M] { self =>
   def unit[A](a: => A): M[A]
   def flatMap[A,B](ma: M[A])(f: A => M[B]): M[B]
 
@@ -44,6 +44,14 @@ trait Monad[M[_]] extends Functor[M] {
 //    sequence(List.fill(n)(ma))
     if (n <= 0) unit(List[A]()) else map2(ma, replicateM(n - 1, ma))(_ :: _)
 
+  def product[A,B](ma: M[A], mb: M[B]): M[(A, B)] = map2(ma, mb)((_, _))
+
+  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = {
+    map2(unit(la), sequence(la.map(f))) { (as,bs) =>
+      (as zip bs) filter(_._2) map(_._1)
+    }
+  }
+
   def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] =
     (a: A) => flatMap(f(a))(g)
 
@@ -54,6 +62,12 @@ trait Monad[M[_]] extends Functor[M] {
 
   // Implement in terms of `join`:
   def __flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
+
+//  implicit def toMonadOps[A](ma: M[A]): MonadOps[A] = MonadOps[A](ma)
+//  case class MonadOps[A](ma: M[A]) {
+//    def flatMap[B](f: A => M[B]) = self.flatMap(ma)(f)
+//  }
+
 }
 
 case class Reader[R, A](run: R => A)
