@@ -46,11 +46,20 @@ trait Monad[M[_]] extends Functor[M] { self =>
 
   def product[A,B](ma: M[A], mb: M[B]): M[(A, B)] = map2(ma, mb)((_, _))
 
-  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = {
-    map2(unit(la), sequence(la.map(f))) { (as,bs) =>
-      (as zip bs) filter(_._2) map(_._1)
+//  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = {
+//    map2(unit(la), sequence(la.map(f))) { (as,bs) =>
+//      (as zip bs) filter(_._2) map(_._1)
+//    }
+//  }
+
+  // translated from http://hackage.haskell.org/package/base-4.7.0.1/docs/src/Control-Monad.html
+  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = la match {
+      case Nil => unit(Nil)
+      case x :: xs => for {
+        flg <- f(x)
+        ys <- filterM(xs)(f)
+      } yield if (flg) x::ys else ys
     }
-  }
 
   def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] =
     (a: A) => flatMap(f(a))(g)
@@ -63,10 +72,11 @@ trait Monad[M[_]] extends Functor[M] { self =>
   // Implement in terms of `join`:
   def __flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
 
-//  implicit def toMonadOps[A](ma: M[A]): MonadOps[A] = MonadOps[A](ma)
-//  case class MonadOps[A](ma: M[A]) {
-//    def flatMap[B](f: A => M[B]) = self.flatMap(ma)(f)
-//  }
+  implicit def toMonadOps[A](ma: M[A]): MonadOps[A] = MonadOps[A](ma)
+  case class MonadOps[A](ma: M[A]) {
+    def flatMap[B](f: A => M[B]) = self.flatMap(ma)(f)
+    def map[B](f: A => B) = self.map(ma)(f)
+  }
 
 }
 
@@ -82,14 +92,16 @@ object Monad {
   val parMonad: Monad[Par] = new Monad[Par] {
     override def unit[A](a: => A): Par[A] = Par.unit(a)
     override def flatMap[A,B](ma: Par[A])(f: A => Par[B]): Par[B] =
-      ma flatMap f
+//      ma flatMap f
+      Par.flatMap(ma)(f)
   }
 
   def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = new Monad[P] {
     import p._
     override def unit[A](a: => A): P[A] = p.succeed(a)
     override def flatMap[A,B](ma: P[A])(f: A => P[B]): P[B] =
-      ma flatMap (f)
+//      ma flatMap(f)
+      p.flatMap(ma)(f)
   }
 
   val optionMonad: Monad[Option] = new Monad[Option] {
