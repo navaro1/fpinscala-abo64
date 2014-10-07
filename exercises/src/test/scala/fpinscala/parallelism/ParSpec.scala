@@ -2,7 +2,7 @@ package fpinscala.parallelism
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.{Future => JFuture}
+import java.util.concurrent.{ Future => JFuture }
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -52,6 +52,9 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
     executorService = Executors.newCachedThreadPool(threadFactory)
   }
 
+  override def afterEach =
+    executorService.shutdown
+
   implicit class TestParOps[A](p: Par[A]) {
     def run: JFuture[A] = Par.run(executorService)(p)
     def get: A = Par.run(executorService)(p).get
@@ -60,7 +63,7 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
   behavior of "7.4 asyncF"
 
   it should "work" in {
-    val intToString = (_:Int).toString
+    val intToString = (_: Int).toString
     val a = asyncF(intToString)(42).run
     val b = asyncF(intToString)(43).run
     eventually {
@@ -102,7 +105,7 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
   }
 
   it should "work asynchronously for non-empty Lists" in {
-    val ints = List(1,2,3)
+    val ints = List(1, 2, 3)
     val parListInts = parFilter(ints)(_ % 2 == 0).run
     eventually {
       assert(parListInts.get == List(2))
@@ -264,13 +267,13 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
   behavior of "map3"
   it should "work synchronously" in {
     eventually {
-      assert(Par.map3(Par.unit(1), Par.unit(2), Par.unit(3))((a,b,c) => s"$a$b$c").get == "123")
+      assert(Par.map3(Par.unit(1), Par.unit(2), Par.unit(3))((a, b, c) => s"$a$b$c").get == "123")
       assertSync
     }
   }
   it should "work asynchronously" in {
     eventually {
-      assert(Par.map3(Par.lazyUnit(1), Par.unit(2), Par.unit(3))((a,b,c) => s"$a$b$c").get == "123")
+      assert(Par.map3(Par.lazyUnit(1), Par.unit(2), Par.unit(3))((a, b, c) => s"$a$b$c").get == "123")
       assertAsync
     }
   }
@@ -280,7 +283,18 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
     forAll("as") { ints: List[Int] =>
       eventually {
         assert(Par.mergeSortPar(Par.unit[Seq[Int]](ints)).get == ints.sorted)
-//        if (ints.length <= 1) assertSync else assertAsync
+        if (ints.length > 1) assertAsync
+      }
+    }
+  }
+
+  behavior of "law of forking"
+  it should "work asynchronously" in {
+    forAll("as") { n: Int =>
+      val parN = Par.unit(n)
+      eventually {
+        assert(Par.fork(parN).get == parN.get)
+        assertAsync
       }
     }
   }
