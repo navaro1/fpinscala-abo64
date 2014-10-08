@@ -68,6 +68,7 @@ object Par {
     //    }
 
     // less efficient, but more readable - and no side effects! ;-)
+    // here is a discussion: http://dublintech.blogspot.de/2013/05/how-could-scala-do-merge-sort.html
     def merge(seq1: Seq[T], seq2: Seq[T]): Seq[T] =
       (seq1, seq2) match {
         case (Nil, _) => seq2
