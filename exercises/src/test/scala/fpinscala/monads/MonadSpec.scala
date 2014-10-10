@@ -103,4 +103,34 @@ class MonadSpec extends FlatSpec with PropertyChecks {
       assert(optionMonad.filterM(la)(evenOption) == expected)
     }
   }
+  behavior of "11.7 compose"
+
+  private[MonadSpec] class ComposeTest[F[_]](M: Monad[F]) {
+    type T = Int
+    val f = (a: T) => M.unit[T](a + 1)
+    val g = (a: T) => M.unit[T](a + 2)
+    val h = (a: T) => M.unit[T](a + 4)
+    val fg = (a: T) => M.unit[T](a + 3)
+    val fgh = (a: T) => M.unit[T](a + 7)
+    val compose = M.compose[T,T,T] _
+
+    def testCompose =
+      forAll("n") { n: T =>
+        assert(compose(f, g)(n) == fg(n))
+        assert(compose(compose(f, g), h)(n) == fgh(n))
+      }
+
+    def testAssociativeLaw =
+      forAll("n") { n: T =>
+        assert(compose(compose(f, g), h)(n) == compose(f, compose(g, h))(n))
+      }
+  }
+
+  val listComposeTest = new ComposeTest(listMonad)
+  it should "work in ListMonad" in listComposeTest.testCompose
+  it should "obey the associative law in ListMonad" in listComposeTest.testAssociativeLaw
+
+  val optionComposeTest = new ComposeTest(optionMonad)
+  it should "work in OptionMonad" in optionComposeTest.testCompose
+  it should "obey the associative law in OptionMonad" in optionComposeTest.testAssociativeLaw
 }
