@@ -65,7 +65,10 @@ trait Monad[M[_]] extends Functor[M] { self =>
     (a: A) => flatMap(f(a))(g)
 
   // Implement in terms of `compose`:
-  def flatMapViaCompose[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
+  def flatMapViaCompose[A,B](ma: M[A])(f: A => M[B]): M[B] =
+    // any dummy input value will do here
+//    compose((_:Unit) => ma, f)(())
+    compose((_:Boolean) => ma, f)(true)
 
   def join[A](mma: M[M[A]]): M[A] = ???
 
@@ -74,6 +77,7 @@ trait Monad[M[_]] extends Functor[M] { self =>
 
   implicit def toMonadOps[A](ma: M[A]): MonadOps[A] = MonadOps[A](ma)
   case class MonadOps[A](ma: M[A]) {
+    def unit(a: => A) = self.unit(a)
     def flatMap[B](f: A => M[B]) = self.flatMap(ma)(f)
     def map[B](f: A => B) = self.map(ma)(f)
   }

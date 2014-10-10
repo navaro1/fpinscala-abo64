@@ -4,24 +4,65 @@ import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
 import Monad._
+import java.util.concurrent.Executors
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonadSpec extends FlatSpec with PropertyChecks {
 
-//  implicit def toMonadOps[A,M[_] <: Monad[M]](self: M[A]) = new MonadOps(self)
-  private def checkMonadLaw[A,B,C,M[_] <: Monad[M]](x: M[A], f: A => M[B], g: B => M[C]) = {
-//    import x.toMonadOps
-//    x.flatMap(f).flatMap(g) == x.flatMap(a => f(a).flatMap(g))
-//    val fx = x.flatMap(x)(f)
-//    fx.flatMap(fx)(g) == x.flatMap(x)(a => f(a).flatMap(g))
-//    x.compose(x.compose(f, g), h) == compose(f, compose(g, h))
+  private[MonadSpec] class MonadTest[F[_]](M: Monad[F]) {
+    import M._
+    type T = Int
+    def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
+    val f = kleisli(_ + 1)
+    val g = kleisli(_ + 2)
+    val h = kleisli(_ + 4)
+    val fg = kleisli(_ + 3)
+    val fgh = kleisli(_ + 7)
+
+    def testMapPreservesStructure(eq: (F[T], F[T]) => Boolean = (_ == _)) =
+      forAll("n") { n: T =>
+        val m = unit[T](n)
+        val idM = map(m)(identity[T])
+        assert(eq(idM, m), s"""eq($idM, $m)""")
+      }
+
+    def testCompose =
+      forAll("n") { n: T =>
+        assert(compose(f, g)(n) == fg(n))
+        assert(compose(compose(f, g), h)(n) == fgh(n))
+      }
+
+    def testAssociativeLaw =
+      forAll("n") { n: T =>
+        assert(compose(compose(f, g), h)(n) == compose(f, compose(g, h))(n))
+      }
   }
 
+  val listMonadTest = new MonadTest(listMonad)
+  val optionMonadTest = new MonadTest(optionMonad)
+  val parMonadTest = new MonadTest(parMonad)
+//  val parserMonadTest = new MonadTest(parserMonad())
+
   behavior of "11.1.1 parMonad"
+  it should "work" in {
+    import fpinscala.parallelism.Par.{run => prun}
+    val es = Executors.newCachedThreadPool
+    try {
+      parMonadTest.testMapPreservesStructure((p1,p2) => prun(es)(p1) == prun(es)(p2))
+    } finally {
+      es.shutdown
+    }
+  }
+
   behavior of "11.1.2 ParserMonad"
+
   behavior of "11.1.3 optionMonad"
+  it should "work" in optionMonadTest.testMapPreservesStructure()
+
   behavior of "11.1.4 streamMonad"
+
   behavior of "11.1.5 listMonad"
+  it should "work" in listMonadTest.testMapPreservesStructure()
 
   behavior of "11.3.1 sequence"
   behavior of "11.3.2 traverse"
@@ -103,35 +144,12 @@ class MonadSpec extends FlatSpec with PropertyChecks {
       assert(optionMonad.filterM(la)(evenOption) == expected)
     }
   }
+
   behavior of "11.7 compose"
 
-  private[MonadSpec] class ComposeTest[F[_]](M: Monad[F]) {
-    type T = Int
-    def kleisli[B](f: T => B) = (a: T) => M.unit[B](f(a))
-    val f = kleisli(_ + 1)
-    val g = kleisli(_ + 2)
-    val h = kleisli(_ + 4)
-    val fg = kleisli(_ + 3)
-    val fgh = kleisli(_ + 7)
-    val compose = M.compose[T,T,T] _
+  it should "work in ListMonad" in listMonadTest.testCompose
+  it should "obey the associative law in ListMonad" in listMonadTest.testAssociativeLaw
 
-    def testCompose =
-      forAll("n") { n: T =>
-        assert(compose(f, g)(n) == fg(n))
-        assert(compose(compose(f, g), h)(n) == fgh(n))
-      }
-
-    def testAssociativeLaw =
-      forAll("n") { n: T =>
-        assert(compose(compose(f, g), h)(n) == compose(f, compose(g, h))(n))
-      }
-  }
-
-  val listComposeTest = new ComposeTest(listMonad)
-  it should "work in ListMonad" in listComposeTest.testCompose
-  it should "obey the associative law in ListMonad" in listComposeTest.testAssociativeLaw
-
-  val optionComposeTest = new ComposeTest(optionMonad)
-  it should "work in OptionMonad" in optionComposeTest.testCompose
-  it should "obey the associative law in OptionMonad" in optionComposeTest.testAssociativeLaw
+  it should "work in OptionMonad" in optionMonadTest.testCompose
+  it should "obey the associative law in OptionMonad" in optionMonadTest.testAssociativeLaw
 }
