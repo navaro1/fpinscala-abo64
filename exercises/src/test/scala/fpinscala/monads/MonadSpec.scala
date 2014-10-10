@@ -107,11 +107,12 @@ class MonadSpec extends FlatSpec with PropertyChecks {
 
   private[MonadSpec] class ComposeTest[F[_]](M: Monad[F]) {
     type T = Int
-    val f = (a: T) => M.unit[T](a + 1)
-    val g = (a: T) => M.unit[T](a + 2)
-    val h = (a: T) => M.unit[T](a + 4)
-    val fg = (a: T) => M.unit[T](a + 3)
-    val fgh = (a: T) => M.unit[T](a + 7)
+    def kleisli[B](f: T => B) = (a: T) => M.unit[B](f(a))
+    val f = kleisli(_ + 1)
+    val g = kleisli(_ + 2)
+    val h = kleisli(_ + 4)
+    val fg = kleisli(_ + 3)
+    val fgh = kleisli(_ + 7)
     val compose = M.compose[T,T,T] _
 
     def testCompose =
