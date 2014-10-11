@@ -187,4 +187,20 @@ class MonadSpec extends FlatSpec with PropertyChecks {
   behavior of "identity laws"
   it should "work in ListMonad" in listMonadTest.identityLaws
   it should "work in OptionMonad" in optionMonadTest.identityLaws
+
+  behavior of "11.12 join"
+  it should "work in ListMonad" in {
+    import listMonadTest._
+    import listMonadTest.M._
+    forAll("mma") { mma: List[List[T]] =>
+      assert(join(mma) == mma.flatten)
+    }
+  }
+  it should "work in OptionMonad" in {
+    import optionMonadTest._
+    import optionMonadTest.M._
+    forAll("mma") { mma: Option[Option[T]] =>
+      assert(join(mma) == mma.flatten)
+    }
+  }
 }
