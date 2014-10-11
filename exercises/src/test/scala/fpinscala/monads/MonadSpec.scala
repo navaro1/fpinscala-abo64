@@ -1,15 +1,32 @@
 package fpinscala.monads
 
-import org.junit.runner.RunWith
-import org.scalatest.FlatSpec
-import org.scalatest.prop.PropertyChecks
-import Monad._
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-@RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MonadSpec extends FlatSpec with PropertyChecks {
+import org.junit.runner.RunWith
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.FlatSpec
+import org.scalatest.prop.PropertyChecks
 
-  private[MonadSpec] case class MonadTest[F[_]](M: Monad[F]) {
+import Monad.listMonad
+import Monad.optionMonad
+import Monad.parMonad
+import Monad.parserMonad
+import Monad.streamMonad
+import fpinscala.parsing.ParserImpl
+import fpinscala.parsing.ParserTypes
+
+@RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
+
+  var executorService: ExecutorService = _
+
+  override def beforeEach = executorService = Executors.newCachedThreadPool
+  override def afterEach = executorService.shutdown
+
+  private[MonadSpec] case class MonadTest[F[_]](M: Monad[F],
+      mEq: (F[Int], F[Int]) => Boolean = ((_:F[Int]) == (_:F[Int])))
+  {
     import M._
     type T = Int
     def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
@@ -19,12 +36,28 @@ class MonadSpec extends FlatSpec with PropertyChecks {
     val fg = kleisli(_ + 3)
     val fgh = kleisli(_ + 7)
 
-    def mapPreservesStructure(eq: (F[T], F[T]) => Boolean = (_ == _)) =
+    def testMonad = {
+      testFlatMap
+      testUnit
+      mapPreservesStructure
+    }
+
+    def testFlatMap =
+      forAll("n") { n: T =>
+        assertEq(flatMap(f(n))(g), fg(n))
+      }
+    def testUnit =
+      forAll("n") { n: T =>
+        assertEq(flatMap(unit(n))(x => unit(x)), unit(n))
+      }
+    def mapPreservesStructure =
       forAll("n") { n: T =>
         val m = unit[T](n)
         val idM = map(m)(identity[T])
-        assert(eq(idM, m), s"""eq($idM, $m)""")
+        assertEq(idM, m)
       }
+    private def assertEq(m1: F[T], m2: F[T]) =
+      assert(mEq(m1, m2), s"""eq($m1, $m2)""")
 
     def testCompose =
       forAll("n") { n: T =>
@@ -53,29 +86,32 @@ class MonadSpec extends FlatSpec with PropertyChecks {
 
   val listMonadTest = MonadTest(listMonad)
   val optionMonadTest = MonadTest(optionMonad)
-  val parMonadTest = MonadTest(parMonad)
-//  val parserMonadTest = MonadTest(parserMonad())
+  val streamMonadTest = MonadTest(streamMonad)
+  val parMonadTest = {
+    import fpinscala.parallelism.Par.{run => prun, Par}
+    MonadTest(parMonad,
+        (p1: Par[Int], p2: Par[Int]) => prun(executorService)(p1) == prun(executorService)(p2))
+  }
+  val parserMonadTest =
+    MonadTest(parserMonad(ParserImpl),
+      (p1: ParserTypes.Parser[Int], p2: ParserTypes.Parser[Int]) => {
+        ParserImpl.run(p1)("") == ParserImpl.run(p1)("")
+      })
 
   behavior of "11.1.1 parMonad"
-  it should "work" in {
-    import fpinscala.parallelism.Par.{run => prun}
-    val es = Executors.newCachedThreadPool
-    try {
-      parMonadTest.mapPreservesStructure((p1,p2) => prun(es)(p1) == prun(es)(p2))
-    } finally {
-      es.shutdown
-    }
-  }
+  it should "work" in  parMonadTest.testMonad
 
   behavior of "11.1.2 ParserMonad"
+  it should "work" in parserMonadTest.testMonad
 
   behavior of "11.1.3 optionMonad"
-  it should "work" in optionMonadTest.mapPreservesStructure()
+  it should "work" in optionMonadTest.testMonad
 
   behavior of "11.1.4 streamMonad"
+  it should "work" in streamMonadTest.testMonad
 
   behavior of "11.1.5 listMonad"
-  it should "work" in listMonadTest.mapPreservesStructure()
+  it should "work" in listMonadTest.testMonad
 
   behavior of "11.3.1 sequence"
   behavior of "11.3.2 traverse"
@@ -94,15 +130,14 @@ class MonadSpec extends FlatSpec with PropertyChecks {
 
         (0, List(1), List(List[Int]())),
         (1, List(1), List(List(1))),
-        (2, List(1), List(List(1,1))),
-        (3, List(1), List(List(1,1,1))),
+        (2, List(1), List(List(1, 1))),
+        (3, List(1), List(List(1, 1, 1))),
 
-        (0, List(1,2), List(List[Int]())),
-        (1, List(1,2), List(List(1), List(2))),
-        (2, List(1,2), List(List(1,1), List(1,2), List(2,1), List(2,2))),
-        (3, List(1,2), List(List(1, 1, 1), List(1, 1, 2), List(1, 2, 1), List(1, 2, 2), List(2, 1, 1),
-            List(2, 1, 2), List(2, 2, 1), List(2, 2, 2)))
-      )
+        (0, List(1, 2), List(List[Int]())),
+        (1, List(1, 2), List(List(1), List(2))),
+        (2, List(1, 2), List(List(1, 1), List(1, 2), List(2, 1), List(2, 2))),
+        (3, List(1, 2), List(List(1, 1, 1), List(1, 1, 2), List(1, 2, 1), List(1, 2, 2), List(2, 1, 1),
+          List(2, 1, 2), List(2, 2, 1), List(2, 2, 2))))
     forAll(tests) { (n: Int, ma: List[Int], expected: List[List[Int]]) =>
       assert(listMonad.replicateM(n, ma) == expected)
     }
@@ -120,9 +155,8 @@ class MonadSpec extends FlatSpec with PropertyChecks {
 
         (0, Some(1), Some(List())),
         (1, Some(1), Some(List(1))),
-        (2, Some(1), Some(List(1,1))),
-        (3, Some(1), Some(List(1,1,1)))
-      )
+        (2, Some(1), Some(List(1, 1))),
+        (3, Some(1), Some(List(1, 1, 1))))
     forAll(tests) { (n: Int, ma: Option[Int], expected: Option[List[Int]]) =>
       assert(optionMonad.replicateM(n, ma) == expected)
     }
@@ -135,9 +169,9 @@ class MonadSpec extends FlatSpec with PropertyChecks {
       Table(
         ("la: List[Int]", "filterM(ma)(evenList"),
         (List[Int](), List(List[Int]())),
-        (List(1,3), List(List[Int]())),
-        (List(2,4), List(List(2,4))),
-        (List(1,2,3,4), List(List(2,4))))
+        (List(1, 3), List(List[Int]())),
+        (List(2, 4), List(List(2, 4))),
+        (List(1, 2, 3, 4), List(List(2, 4))))
     forAll(tests) { (la: List[Int], expected: List[List[Int]]) =>
       assert(listMonad.filterM(la)(evenList) == expected)
     }
@@ -150,9 +184,9 @@ class MonadSpec extends FlatSpec with PropertyChecks {
       Table(
         ("la: List[Int]", "filterM(ma)(evenOption"),
         (List[Int](), Some(List[Int]())),
-        (List(1,3), Some(List[Int]())),
-        (List(2,4), Some(List(2,4))),
-        (List(1,2,3,4), Some(List(2,4))))
+        (List(1, 3), Some(List[Int]())),
+        (List(2, 4), Some(List(2, 4))),
+        (List(1, 2, 3, 4), Some(List(2, 4))))
     forAll(tests) { (la: List[Int], expected: Some[List[Int]]) =>
       assert(optionMonad.filterM(la)(evenOption) == expected)
     }
@@ -226,17 +260,17 @@ class MonadSpec extends FlatSpec with PropertyChecks {
   it should "work in ListMonad" in {
     import listMonadTest._
     import listMonadTest.M._
-      forAll("n") { n: T =>
-        assert(composeViaJoinAndMap(f, g)(n) == fg(n))
-        assert(composeViaJoinAndMap(composeViaJoinAndMap(f, g), h)(n) == fgh(n))
-      }
+    forAll("n") { n: T =>
+      assert(composeViaJoinAndMap(f, g)(n) == fg(n))
+      assert(composeViaJoinAndMap(composeViaJoinAndMap(f, g), h)(n) == fgh(n))
+    }
   }
   it should "work in OptionMonad" in {
     import optionMonadTest._
     import optionMonadTest.M._
     forAll("n") { n: T =>
-        assert(composeViaJoinAndMap(f, g)(n) == fg(n))
-        assert(composeViaJoinAndMap(composeViaJoinAndMap(f, g), h)(n) == fgh(n))
-      }
+      assert(composeViaJoinAndMap(f, g)(n) == fg(n))
+      assert(composeViaJoinAndMap(composeViaJoinAndMap(f, g), h)(n) == fgh(n))
+    }
   }
 }
