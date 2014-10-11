@@ -13,13 +13,13 @@ class MonadSpec extends FlatSpec with PropertyChecks {
     import M._
     type T = Int
     def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
-    val f = kleisli(_ + 1)
+    val f = kleisli[T](_ + 1)
     val g = kleisli(_ + 2)
     val h = kleisli(_ + 4)
     val fg = kleisli(_ + 3)
     val fgh = kleisli(_ + 7)
 
-    def testMapPreservesStructure(eq: (F[T], F[T]) => Boolean = (_ == _)) =
+    def mapPreservesStructure(eq: (F[T], F[T]) => Boolean = (_ == _)) =
       forAll("n") { n: T =>
         val m = unit[T](n)
         val idM = map(m)(identity[T])
@@ -32,10 +32,23 @@ class MonadSpec extends FlatSpec with PropertyChecks {
         assert(compose(compose(f, g), h)(n) == fgh(n))
       }
 
-    def testAssociativeLaw =
+    def associativeLaw =
       forAll("n") { n: T =>
         assert(compose(compose(f, g), h)(n) == compose(f, compose(g, h))(n))
       }
+
+    def identityLaws = {
+      val strictUnit = (t: T) => unit(t)
+      val leftIdentity = compose(f, strictUnit)
+      val rightIdentity = compose(unit[T], f)
+
+      forAll("n") { n: T =>
+        assert(leftIdentity(n) == f(n), "leftIdentity")
+        assert(rightIdentity(n) == f(n), "rightIdentity")
+        assert(flatMap(f(n))(strictUnit) == f(n), "leftIdentity (flatMap)")
+        assert(flatMap(strictUnit(n))(f) == f(n), "rightIdentity (flatMap)")
+      }
+    }
   }
 
   val listMonadTest = new MonadTest(listMonad)
@@ -48,7 +61,7 @@ class MonadSpec extends FlatSpec with PropertyChecks {
     import fpinscala.parallelism.Par.{run => prun}
     val es = Executors.newCachedThreadPool
     try {
-      parMonadTest.testMapPreservesStructure((p1,p2) => prun(es)(p1) == prun(es)(p2))
+      parMonadTest.mapPreservesStructure((p1,p2) => prun(es)(p1) == prun(es)(p2))
     } finally {
       es.shutdown
     }
@@ -57,12 +70,12 @@ class MonadSpec extends FlatSpec with PropertyChecks {
   behavior of "11.1.2 ParserMonad"
 
   behavior of "11.1.3 optionMonad"
-  it should "work" in optionMonadTest.testMapPreservesStructure()
+  it should "work" in optionMonadTest.mapPreservesStructure()
 
   behavior of "11.1.4 streamMonad"
 
   behavior of "11.1.5 listMonad"
-  it should "work" in listMonadTest.testMapPreservesStructure()
+  it should "work" in listMonadTest.mapPreservesStructure()
 
   behavior of "11.3.1 sequence"
   behavior of "11.3.2 traverse"
@@ -148,8 +161,14 @@ class MonadSpec extends FlatSpec with PropertyChecks {
   behavior of "11.7 compose"
 
   it should "work in ListMonad" in listMonadTest.testCompose
-  it should "obey the associative law in ListMonad" in listMonadTest.testAssociativeLaw
+  it should "obey the associative law in ListMonad" in listMonadTest.associativeLaw
 
   it should "work in OptionMonad" in optionMonadTest.testCompose
-  it should "obey the associative law in OptionMonad" in optionMonadTest.testAssociativeLaw
+  it should "obey the associative law in OptionMonad" in optionMonadTest.associativeLaw
+
+  behavior of "11.8 flatMapViaCompose"
+
+  behavior of "identity laws"
+  it should "work in ListMonad" in listMonadTest.identityLaws
+  it should "work in OptionMonad" in optionMonadTest.identityLaws
 }
