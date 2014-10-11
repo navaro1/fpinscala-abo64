@@ -9,7 +9,7 @@ import java.util.concurrent.Executors
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonadSpec extends FlatSpec with PropertyChecks {
 
-  private[MonadSpec] class MonadTest[F[_]](M: Monad[F]) {
+  private[MonadSpec] case class MonadTest[F[_]](M: Monad[F]) {
     import M._
     type T = Int
     def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
@@ -51,10 +51,10 @@ class MonadSpec extends FlatSpec with PropertyChecks {
     }
   }
 
-  val listMonadTest = new MonadTest(listMonad)
-  val optionMonadTest = new MonadTest(optionMonad)
-  val parMonadTest = new MonadTest(parMonad)
-//  val parserMonadTest = new MonadTest(parserMonad())
+  val listMonadTest = MonadTest(listMonad)
+  val optionMonadTest = MonadTest(optionMonad)
+  val parMonadTest = MonadTest(parMonad)
+//  val parserMonadTest = MonadTest(parserMonad())
 
   behavior of "11.1.1 parMonad"
   it should "work" in {
@@ -167,6 +167,22 @@ class MonadSpec extends FlatSpec with PropertyChecks {
   it should "obey the associative law in OptionMonad" in optionMonadTest.associativeLaw
 
   behavior of "11.8 flatMapViaCompose"
+  it should "work in ListMonad" in {
+    import listMonadTest._
+    import listMonadTest.M._
+    forAll("n") { n: T =>
+      assert(flatMapViaCompose(f(n))(g) == fg(n))
+      assert(flatMapViaCompose(f(n))(g) == flatMap(f(n))(g))
+    }
+  }
+  it should "work in OptionMonad" in {
+    import optionMonadTest._
+    import optionMonadTest.M._
+    forAll("n") { n: T =>
+      assert(flatMapViaCompose(f(n))(g) == fg(n))
+      assert(flatMapViaCompose(f(n))(g) == flatMap(f(n))(g))
+    }
+  }
 
   behavior of "identity laws"
   it should "work in ListMonad" in listMonadTest.identityLaws
