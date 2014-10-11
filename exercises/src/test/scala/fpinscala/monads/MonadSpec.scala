@@ -203,4 +203,22 @@ class MonadSpec extends FlatSpec with PropertyChecks {
       assert(join(mma) == mma.flatten)
     }
   }
+
+  behavior of "11.13.1 flatMapViaJoinAndMap"
+  it should "work in ListMonad" in {
+    import listMonadTest._
+    import listMonadTest.M._
+    forAll("n") { n: T =>
+      assert(flatMapViaJoinAndMap(f(n))(g) == fg(n))
+      assert(flatMapViaJoinAndMap(f(n))(g) == flatMap(f(n))(g))
+    }
+  }
+  it should "work in OptionMonad" in {
+    import optionMonadTest._
+    import optionMonadTest.M._
+    forAll("n") { n: T =>
+      assert(flatMapViaJoinAndMap(f(n))(g) == fg(n))
+      assert(flatMapViaJoinAndMap(f(n))(g) == flatMap(f(n))(g))
+    }
+  }
 }

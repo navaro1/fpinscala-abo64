@@ -70,6 +70,9 @@ trait Monad[M[_]] extends Functor[M] { self =>
 //    compose((_:Unit) => ma, f)(())
     compose((_:Boolean) => ma, f)(true)
 
+  def flatMapViaJoinAndMap[A,B](ma: M[A])(f: A => M[B]): M[B] =
+    join(map(ma)(f))
+
   def join[A](mma: M[M[A]]): M[A] =
     mma.flatMap(ma => ma)
 
