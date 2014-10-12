@@ -8,6 +8,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
 
+import Monad.idMonad
 import Monad.listMonad
 import Monad.optionMonad
 import Monad.parMonad
@@ -97,6 +98,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       (p1: ParserTypes.Parser[Int], p2: ParserTypes.Parser[Int]) => {
         ParserImpl.run(p1)("") == ParserImpl.run(p1)("")
       })
+  val idMonadTest = MonadTest(idMonad)
 
   behavior of "11.1.1 parMonad"
   it should "work" in  parMonadTest.testMonad
@@ -273,4 +275,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       assert(composeViaJoinAndMap(composeViaJoinAndMap(f, g), h)(n) == fgh(n))
     }
   }
+
+  behavior of "11.17 idMonad"
+  it should "work" in idMonadTest.testMonad
 }
