@@ -3,6 +3,8 @@ package fpinscala.monads
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import org.junit.runner.RunWith
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
@@ -11,11 +13,13 @@ import Monad.listMonad
 import Monad.optionMonad
 import Monad.parMonad
 import Monad.parserMonad
+import Monad.stateMonad
 import Monad.streamMonad
+import fpinscala.parallelism.Par.Par
+import fpinscala.parallelism.Par.{run => prun}
 import fpinscala.parsing.ParserImpl
 import fpinscala.parsing.ParserTypes
-import org.scalacheck.Arbitrary
-import org.scalacheck.Gen
+import fpinscala.state.State
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
@@ -306,4 +310,22 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
 
   behavior of "11.17 idMonad"
   it should "work" in idMonadTest.testMonad
+
+  val intStateMonad = stateMonad[T]
+
+  behavior of "11.18.1 stateMonad.replicateM"
+  it should "work" in {
+    import intStateMonad._
+    val a = 1
+    val ma: State[T,Int] = unit(a)
+    val s: T = 0
+    val tests = Table(
+      ("n", "replicateM(n, unit(1)).run(0)"),
+      (0, (List(),s)),
+      (1, (List(a),s)),
+      (2, (List(a, a),s)))
+    forAll(tests) { (n: Int, expected: (List[Int], T)) =>
+      assert(replicateM(n, ma).run(s) == expected)
+    }
+  }
 }
