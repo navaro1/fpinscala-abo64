@@ -2,12 +2,10 @@ package fpinscala.monads
 
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
 import org.junit.runner.RunWith
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
-
 import Monad.idMonad
 import Monad.listMonad
 import Monad.optionMonad
@@ -16,9 +14,17 @@ import Monad.parserMonad
 import Monad.streamMonad
 import fpinscala.parsing.ParserImpl
 import fpinscala.parsing.ParserTypes
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
+
+  // tests w/ Int are simplest
+  private type T = Int
+
+  private implicit def arbitraryMonad[M[_] <: Monad[M]](m: M[T]): Arbitrary[M[T]] =
+    Arbitrary(Gen.choose(-100, 100) map(m.unit(_)))
 
   var executorService: ExecutorService = _
 
@@ -29,7 +35,6 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       mEq: (F[Int], F[Int]) => Boolean = ((_:F[Int]) == (_:F[Int])))
   {
     import M._
-    type T = Int
     def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
     val f = kleisli[T](_ + 1)
     val g = kleisli(_ + 2)
@@ -59,6 +64,12 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       }
     private def assertEq(m1: F[T], m2: F[T]) =
       assert(mEq(m1, m2), s"""eq($m1, $m2)""")
+
+    def testSequence =
+      forAll("l") { l: List[T] =>
+        val lma = l map(M.unit(_))
+        assert(sequence(lma) == M.unit(l))
+      }
 
     def testCompose =
       forAll("n") { n: T =>
@@ -116,6 +127,9 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   it should "work" in listMonadTest.testMonad
 
   behavior of "11.3.1 sequence"
+  it should "work in ListMonad" in listMonadTest.testSequence
+  it should "work in OptionMonad" in optionMonadTest.testSequence
+
   behavior of "11.3.2 traverse"
 
   behavior of "11.4 replicateM"
