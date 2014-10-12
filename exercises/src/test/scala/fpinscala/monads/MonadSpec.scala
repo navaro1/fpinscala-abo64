@@ -58,7 +58,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       }
     def mapPreservesStructure =
       forAll("n") { n: T =>
-        val m = unit[T](n)
+        val m = unit(n)
         val idM = map(m)(identity[T])
         assertEq(idM, m)
       }
@@ -68,13 +68,17 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     def testSequence =
       forAll("l") { l: List[T] =>
         val lma = l map(M.unit(_))
-        assert(sequence(lma) == M.unit(l))
+        assert(sequence(lma) == unit(l))
       }
 
     def testTraverse =
       forAll("l") { l: List[T] =>
-        val lma = l map(M.unit(_))
-        assert(traverse(l)(f) == M.unit(l map(_ + 1)))
+        assert(traverse(l)(f) == unit(l map(_ + 1)))
+      }
+
+    def testReplicateM =
+      forAll(Gen.choose(0, 100) label "n") { n: Int =>
+        assert(replicateM(n, unit(1)) == unit(List.fill(n)(1)))
       }
 
     def testCompose =
@@ -141,6 +145,8 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   it should "work in OptionMonad" in optionMonadTest.testTraverse
 
   behavior of "11.4 replicateM"
+  it should "work in ListMonad" in listMonadTest.testReplicateM
+  it should "work in OptionMonad" in optionMonadTest.testReplicateM
 
   behavior of "11.5.1 replicateM in ListMonad"
   it should "work" in {
