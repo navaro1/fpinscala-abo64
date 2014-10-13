@@ -365,4 +365,18 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       assert(sequence(lma).run(s0) == expected.run(s0))
     }
   }
+
+  behavior of "11.19 stateMonad laws"
+  it should "hold" in {
+    import intStateMonad._
+    import Monad._
+    type S = Int
+
+    stateEq(getState[S], getState[S].flatMap(unit(_)))
+
+    def stateEq(s1: State[S,S], s2: State[S,S]) =
+      forAll("s") { s: S =>
+        assert(s1.run(s) == s2.run(s), s"s1.run($s) == s2.run($s)")
+      }
+  }
 }

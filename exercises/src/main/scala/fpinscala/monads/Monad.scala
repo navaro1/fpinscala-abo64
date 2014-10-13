@@ -144,6 +144,9 @@ object Monad {
     override def flatMap[A,B](ida: Id[A])(f: A => Id[B]): Id[B] = ida flatMap f
   }
 
+  def getState[S]: State[S,S] = State(s => (s,s))
+  def setState[S](s: S): State[S,Unit] = State(_ => ((),s))
+
   def readerMonad[R] = ???
 }
 
