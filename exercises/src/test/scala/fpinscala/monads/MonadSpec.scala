@@ -320,7 +320,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     type A = Int
     val a: A = 1
     val ma: State[S,A] = unit(a)
-    val s: S = 0
+    val s0: S = 0
     val tests = Table(
       ("n", "replicateM(n, unit(a))"),
       (0, unit(List())),
@@ -328,7 +328,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       (2, unit(List(a, a))),
       (3, unit(List(a, a, a))))
     forAll(tests) { (n: Int, expected: State[S,List[A]]) =>
-      assert(replicateM(n, ma).run(s) == expected.run(s))
+      assert(replicateM(n, ma).run(s0) == expected.run(s0))
     }
   }
 
@@ -339,14 +339,30 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     type A = Int
     type B = Int
     type C = Int
-    val s: S = 0
+    val s0: S = 0
     val f: (A,B) => C  = _ + _
     val tests = Table(
       ("ma: State[S,A]", "mb: State[S,B]", "map2(ma, mb)(_ + _)"),
       (unit(1), unit(2), unit(f(1, 2))),
       (unit(2), unit(3), unit(f(2, 3))))
     forAll(tests) { (ma: State[S,A], mb: State[S,B], expected: State[S,A]) =>
-      assert(map2(ma, mb)(f).run(s) == expected.run(s))
+      assert(map2(ma, mb)(f).run(s0) == expected.run(s0))
+    }
+  }
+
+  behavior of "11.18.3 stateMonad.sequence"
+  it should "work" in {
+    import intStateMonad._
+    type S = Int
+    type A = Int
+    val s0: S = 0
+    val tests = Table(
+      ("lma: List[State[S,A]]", "sequence(lma)"),
+      (List(), unit(List())),
+      (List(unit(1)), unit(List(1))),
+      (List(unit(1), unit(2)), unit(List(1,2))))
+    forAll(tests) { (lma: List[State[S,A]], expected: State[S,List[A]]) =>
+      assert(sequence(lma).run(s0) == expected.run(s0))
     }
   }
 }
