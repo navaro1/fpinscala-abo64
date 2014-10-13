@@ -91,8 +91,6 @@ trait Monad[M[_]] extends Functor[M] { self =>
 
 }
 
-case class Reader[R, A](run: R => A)
-
 object Monad {
   val genMonad = new Monad[Gen] {
     def unit[A](a: => A): Gen[A] = Gen.unit(a)
@@ -147,7 +145,20 @@ object Monad {
   def getState[S]: State[S,S] = State(s => (s,s))
   def setState[S](s: S): State[S,Unit] = State(_ => ((),s))
 
-  def readerMonad[R] = ???
+  val F = stateMonad[Int]
+
+  def zipWithIndex[A](as: List[A]): List[(Int,A)] =
+    as.foldLeft(F.unit(List[(Int, A)]()))((acc,a) => for {
+      xs <- acc
+      n  <- getState
+      _  <- setState(n + 1)
+    } yield (n, a) :: xs).run(0)._1.reverse
+
+  def readerMonad[R] = new Monad[({type f[x] = Reader[R,x]})#f] {
+    def unit[A](a: => A): Reader[R,A] = Reader(_ => a)
+    override def flatMap[A,B](st: Reader[R,A])(f: A => Reader[R,B]): Reader[R,B] =
+      Reader(r => f(st.run(r)).run(r))
+  }
 }
 
 case class Id[A](value: A) {
@@ -155,10 +166,9 @@ case class Id[A](value: A) {
   def flatMap[B](f: A => Id[B]): Id[B] = f(value)
 }
 
+case class Reader[R, A](run: R => A)
+
 object Reader {
-  def readerMonad[R] = new Monad[({type f[x] = Reader[R,x]})#f] {
-    def unit[A](a: => A): Reader[R,A] = ???
-    override def flatMap[A,B](st: Reader[R,A])(f: A => Reader[R,B]): Reader[R,B] = ???
-  }
+  def ask[R]: Reader[R, R] = Reader(r => r)
 }
 

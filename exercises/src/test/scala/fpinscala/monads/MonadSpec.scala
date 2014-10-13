@@ -13,6 +13,7 @@ import Monad.listMonad
 import Monad.optionMonad
 import Monad.parMonad
 import Monad.parserMonad
+import Monad.readerMonad
 import Monad.stateMonad
 import Monad.streamMonad
 import fpinscala.parallelism.Par.Par
@@ -378,5 +379,14 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
       forAll("s") { s: S =>
         assert(s1.run(s) == s2.run(s), s"s1.run($s) == s2.run($s)")
       }
+  }
+
+  behavior of "11.20 readerMonad"
+  it should "work" in {
+    val rm = readerMonad[T]
+    import rm._
+    forAll("a") { a: T =>
+      assert(unit(a).run(-1) == a)
+    }
   }
 }
