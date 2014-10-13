@@ -316,16 +316,37 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   behavior of "11.18.1 stateMonad.replicateM"
   it should "work" in {
     import intStateMonad._
-    val a = 1
-    val ma: State[T,Int] = unit(a)
-    val s: T = 0
+    type S = Int
+    type A = Int
+    val a: A = 1
+    val ma: State[S,A] = unit(a)
+    val s: S = 0
     val tests = Table(
-      ("n", "replicateM(n, unit(1)).run(0)"),
-      (0, (List(),s)),
-      (1, (List(a),s)),
-      (2, (List(a, a),s)))
-    forAll(tests) { (n: Int, expected: (List[Int], T)) =>
-      assert(replicateM(n, ma).run(s) == expected)
+      ("n", "replicateM(n, unit(a))"),
+      (0, unit(List())),
+      (1, unit(List(a))),
+      (2, unit(List(a, a))),
+      (3, unit(List(a, a, a))))
+    forAll(tests) { (n: Int, expected: State[S,List[A]]) =>
+      assert(replicateM(n, ma).run(s) == expected.run(s))
+    }
+  }
+
+  behavior of "11.18.2 stateMonad.map2"
+  it should "work" in {
+    import intStateMonad._
+    type S = Int
+    type A = Int
+    type B = Int
+    type C = Int
+    val s: S = 0
+    val f: (A,B) => C  = _ + _
+    val tests = Table(
+      ("ma: State[S,A]", "mb: State[S,B]", "map2(ma, mb)(_ + _)"),
+      (unit(1), unit(2), unit(f(1, 2))),
+      (unit(2), unit(3), unit(f(2, 3))))
+    forAll(tests) { (ma: State[S,A], mb: State[S,B], expected: State[S,A]) =>
+      assert(map2(ma, mb)(f).run(s) == expected.run(s))
     }
   }
 }
