@@ -73,36 +73,6 @@ object Monoid {
       op(a, zero) == a && op(zero, a) == a)
   }
 
-  
-  def run(prop: Prop, testCases: TestCases): Result = {
-    import fpinscala.state.RNG.Simple
-    prop.run(testCases, Simple(0))
-  }
-
-  def testMonoidLaws(testCases: TestCases): Result = {
-    def intGen(max: Int) = Gen.choose(0, max)
-    def listGen[A](gen: Gen[A]) = gen.listOfN(intGen(10))
-    val stringGen = intGen(10) flatMap(Gen.stringN)
-    def optionGen[A](gen: Gen[A]): Gen[Option[A]] =
-      for {
-        b <- Gen.boolean
-        a <- gen
-        o = if (b) Some(a) else None
-      } yield o
-
-    val monoidProps =
-      monoidLaws(stringMonoid, stringGen) &&
-      monoidLaws(listMonoid[Int], listGen(intGen(100))) &&
-      monoidLaws(listMonoid[String], listGen(stringGen)) &&
-      monoidLaws(intAddition, intGen(100)) &&
-      monoidLaws(intMultiplication, intGen(100)) &&
-      monoidLaws(booleanOr, Gen.boolean) &&
-      monoidLaws(booleanAnd, Gen.boolean) &&
-      monoidLaws(optionMonoid[Int], optionGen(intGen(10)))
-
-    run(monoidProps, testCases)
-  }
-
   def trimMonoid(s: String): Monoid[String] = sys.error("todo")
 
   def concatenate[A](as: List[A], m: Monoid[A]): A =

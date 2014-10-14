@@ -6,10 +6,42 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
+import fpinscala.testing.{Gen => FPGen}
 import java.util.concurrent.Executors
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MonoidSpec extends FlatSpec with PropertyChecks {
+
+  import fpinscala.testing.Prop
+  import Prop._
+  def runProp(prop: Prop, testCases: TestCases): Result = {
+    import fpinscala.state.RNG.Simple
+    prop.run(testCases, Simple(0))
+  }
+
+  def testMonoidLaws(testCases: TestCases): Result = {
+    def intGen(max: Int) = FPGen.choose(0, max)
+    def listGen[A](gen: FPGen[A]) = gen.listOfN(intGen(10))
+    val stringGen = intGen(10) flatMap(FPGen.stringN)
+    def optionGen[A](gen: FPGen[A]): FPGen[Option[A]] =
+      for {
+        b <- FPGen.boolean
+        a <- gen
+      } yield if (b) Some(a) else None
+
+    import Monoid._
+    val monoidProps =
+      monoidLaws(stringMonoid, stringGen) &&
+      monoidLaws(listMonoid[Int], listGen(intGen(100))) &&
+      monoidLaws(listMonoid[String], listGen(stringGen)) &&
+      monoidLaws(intAddition, intGen(100)) &&
+      monoidLaws(intMultiplication, intGen(100)) &&
+      monoidLaws(booleanOr, FPGen.boolean) &&
+      monoidLaws(booleanAnd, FPGen.boolean) &&
+      monoidLaws(optionMonoid[Int], optionGen(intGen(10)))
+
+    runProp(monoidProps, testCases)
+  }
 
   private def checkMonoidLaws[A](m: Monoid[A], gen: Gen[A],
       isEqual: (A,A) => Boolean = (_:A) == (_:A)) =
@@ -67,7 +99,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
   behavior of "10.4 monoidLaws"
   it should "check all written monoids so far" in {
     import fpinscala.testing.Prop.Passed
-    assert(Monoid.testMonoidLaws(10) == Passed)
+    assert(testMonoidLaws(10) == Passed)
   }
 
   behavior of "10.5 foldMap"
@@ -139,7 +171,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     } yield Monoid.Part(lStub, words, rStub)
     val wcGen: Gen[Monoid.WC] = Gen.union(stubGen, partGen)
     val laws = Monoid.monoidLaws(Monoid.wcMonoid, wcGen)
-    assert(Monoid.run(laws, 10) == Passed)
+    assert(runProp(laws, 10) == Passed)
   }
 
   behavior of "10.11 countWords"
