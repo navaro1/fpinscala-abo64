@@ -76,7 +76,7 @@ object Par {
         case (h1 :: t1, h2 :: t2) =>
           if (ord.lt(h1, h2)) h1 +: merge(t1, seq2) // :: as constructor only defined for List
           else h2 +: merge(seq1, t2)
-    }
+      }
 
     parSeq flatMap { seq =>
       val len = seq.length
@@ -180,11 +180,20 @@ object Examples {
       sum(l) + sum(r) // Recursively sum both halves and add the results together.
     }
 
+  // Kestrel combinator: perform some side effect before returning result
+  // http://stackoverflow.com/questions/9671620/how-to-keep-return-value-when-logging-in-scala/9673294#9673294
+  // http://debasishg.blogspot.de/2009/09/side-effects-with-kestrel-in-scala.html
+  private def kestrel[A](x: A)(f: A => Unit): A = { f(x); x }
+
   def parCountWords(paragraphs: List[String]): Par[Int] = {
     val wordPattern = """(?U)\b\w+\b""".r
-    def countWords(s: String): Par[Int] = Par.lazyUnit(wordPattern.findAllIn(s).size)
+    def countWords(s: String): Int =
+      kestrel(wordPattern.findAllIn(s).size) { wc =>
+//        println(s"${Thread.currentThread} $s: $wc")
+      }
+    def countWordsPar(s: String): Par[Int] = Par.lazyUnit(countWords(s))
 
-    val parCounts = paragraphs.map(countWords)
+    val parCounts: List[Par[Int]] = paragraphs.map(countWordsPar)
     Par.sequence(parCounts) map (_.sum)
   }
 }

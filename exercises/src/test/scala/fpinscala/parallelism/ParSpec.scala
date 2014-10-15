@@ -57,7 +57,7 @@ class ParSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach with 
 
   implicit class TestParOps[A](p: Par[A]) {
     def run: JFuture[A] = Par.run(executorService)(p)
-    def get: A = Par.run(executorService)(p).get
+    def get: A = p.run.get
   }
 
   behavior of "7.4 asyncF"
