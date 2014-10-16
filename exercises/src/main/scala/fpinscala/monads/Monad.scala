@@ -42,7 +42,8 @@ trait Monad[M[_]] extends Functor[M] { self =>
 
   def replicateM[A](n: Int, ma: M[A]): M[List[A]] =
 //    sequence(List.fill(n)(ma))
-    if (n <= 0) unit(List[A]()) else map2(ma, replicateM(n - 1, ma))(_ :: _)
+//    if (n <= 0) unit(List[A]()) else map2(ma, replicateM(n - 1, ma))(_ :: _)
+    sequence(List.fill(n)(ma))
 
   def product[A,B](ma: M[A], mb: M[B]): M[(A, B)] = map2(ma, mb)((_, _))
 

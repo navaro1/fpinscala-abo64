@@ -55,4 +55,8 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   it should "work in ListApplicative" in listApplicativeTest.testSequence
   it should "work in OptionApplicative" in optionApplicativeTest.testSequence
 
+  behavior of "12.1.2 replicateM"
+  it should "work in ListApplicative" in listApplicativeTest.testReplicateM
+  it should "work in OptionApplicative" in optionApplicativeTest.testReplicateM
+
 }

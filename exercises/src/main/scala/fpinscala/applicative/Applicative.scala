@@ -23,7 +23,9 @@ trait Applicative[F[_]] extends Functor[F] {
 
   def traverse[A,B](as: List[A])(f: A => F[B]): F[List[B]] = ???
 
-  def replicateM[A](n: Int, fa: F[A]): F[List[A]] = ???
+  def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
+//    if (n <= 0) unit(List[A]()) else map2(fa, replicateM(n - 1, fa))(_ :: _)
+    sequence(List.fill(n)(fa))
 
   def factor[A,B](fa: F[A], fb: F[A]): F[(A,B)] = ???
 
