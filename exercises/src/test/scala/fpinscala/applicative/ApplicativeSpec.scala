@@ -55,6 +55,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       forAll("a", "b") { (a: T, b: T) =>
         assert(product(unit(a), unit(b)) == unit((a,b)))
       }
+
+    def mapPreservesStructure =
+      forAll("n") { m: F[T] =>
+        assertEq(map(m)(identity[T]), m)
+      }
   }
 
   import Applicative._
@@ -76,5 +81,9 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   behavior of "12.1.4 traverse"
   it should "work in ListApplicative" in listApplicativeTest.testTraverse
   it should "work in OptionApplicative" in optionApplicativeTest.testTraverse
+
+  behavior of "12.2.1 map via unit and apply"
+  it should "work in ListApplicative" in listApplicativeTest.mapPreservesStructure
+  it should "work in OptionApplicative" in optionApplicativeTest.mapPreservesStructure
 
 }
