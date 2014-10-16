@@ -125,7 +125,10 @@ trait Stream[+A] {
       case _ => None
     }
 
-  def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
+  def startsWith[B](s: Stream[B]): Boolean = 
+    zipAll(s).takeWhile(!_._2.isEmpty) forAll {
+      case (h,h2) => h == h2
+    }
 
   def tails: Stream[Stream[A]] = sys.error("todo using unfold")
 
