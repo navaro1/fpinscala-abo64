@@ -82,7 +82,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   it should "work in ListApplicative" in listApplicativeTest.testTraverse
   it should "work in OptionApplicative" in optionApplicativeTest.testTraverse
 
-  behavior of "12.2.1 map via unit and apply"
+  behavior of "12.2 map via unit and apply"
   it should "work in ListApplicative" in listApplicativeTest.mapPreservesStructure
   it should "work in OptionApplicative" in optionApplicativeTest.mapPreservesStructure
 
