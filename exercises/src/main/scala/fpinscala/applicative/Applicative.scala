@@ -18,7 +18,8 @@ trait Applicative[F[_]] extends Functor[F] {
   def map[A,B](fa: F[A])(f: A => B): F[B] =
     apply(unit(f))(fa)
 
-  def sequence[A](fas: List[F[A]]): F[List[A]] = ???
+  def sequence[A](fas: List[F[A]]): F[List[A]] =
+    fas.foldRight(unit(List[A]()))((ma, mla) => map2(ma, mla)(_ :: _))
 
   def traverse[A,B](as: List[A])(f: A => F[B]): F[List[B]] = ???
 
@@ -69,6 +70,24 @@ case class Success[A](a: A) extends Validation[Nothing, A]
 
 
 object Applicative {
+
+  val listApplicative = new Applicative[List] {
+    override def unit[A](a: => A): List[A] = List(a)
+    override def map2[A,B,C](a: List[A], b: List[B])(f: (A,B) => C): List[C] =
+      a zip b map f.tupled
+  }
+
+  val optionApplicative = new Applicative[Option] {
+    override def unit[A](a: => A): Option[A] = Some(a)
+    override def map2[A,B,C](a: Option[A], b: Option[B])(f: (A,B) => C): Option[C] = {
+      def zip[A,B](a: Option[A], b: Option[B]) = (a,b) match {
+        case (Some(a), Some(b)) => Some((a,b))
+        case _ => None
+      }
+      zip(a, b) map f.tupled
+    }
+  }
+
 
   val streamApplicative = new Applicative[Stream] {
 
