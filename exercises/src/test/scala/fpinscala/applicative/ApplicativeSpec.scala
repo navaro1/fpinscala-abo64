@@ -27,10 +27,6 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
     def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
     val f = kleisli[T](_ + 1)
-    val g = kleisli(_ + 2)
-    val h = kleisli(_ + 4)
-    val fg = kleisli(_ + 3)
-    val fgh = kleisli(_ + 7)
 
     private def assertEq(m1: F[T], m2: F[T]) =
       assert(mEq(m1, m2), s"""eq($m1, $m2)""")
@@ -60,6 +56,20 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       forAll("n") { m: F[T] =>
         assertEq(map(m)(identity[T]), m)
       }
+
+    def testMap3 = {
+      val f = (a:T, b:T, c:T) => a + b + c
+      forAll("a", "b", "c") { (a: T, b: T, c: T) =>
+        assert(map3(unit(a), unit(b), unit(c))(f) == unit(f(a,b,c)))
+      }
+    }
+
+    def testMap4 = {
+      val f = (a:T, b:T, c:T, d:T) => a + b + c + d
+      forAll("a", "b", "c", "d") { (a: T, b: T, c: T, d:T) =>
+        assert(map4(unit(a), unit(b), unit(c), unit(d))(f) == unit(f(a,b,c,d)))
+      }
+    }
   }
 
   import Applicative._
@@ -85,5 +95,13 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   behavior of "12.2 map via unit and apply"
   it should "work in ListApplicative" in listApplicativeTest.mapPreservesStructure
   it should "work in OptionApplicative" in optionApplicativeTest.mapPreservesStructure
+
+  behavior of "12.3.1 map3"
+  it should "work in ListApplicative" in listApplicativeTest.testMap3
+  it should "work in OptionApplicative" in optionApplicativeTest.testMap3
+
+  behavior of "12.3.2 map4"
+  it should "work in ListApplicative" in listApplicativeTest.testMap4
+  it should "work in OptionApplicative" in optionApplicativeTest.testMap4
 
 }
