@@ -136,7 +136,11 @@ trait Stream[+A] {
       case s => Some((s, s drop 1))
     } append (Stream(empty))
 
-  def scanRight[B](s: B)(f: (A, B) => B): Stream[B] = sys.error("todo")
+  def scanRight[B](s: B)(f: (A, B) => B): Stream[B] =
+    foldRight((s, Stream(s)))((a,p) => {
+      val b2 = f(a,p._1)
+      (b2, cons(b2,p._2))
+    })._2
 }
 
 case object Empty extends Stream[Nothing]
