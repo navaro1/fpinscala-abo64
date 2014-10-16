@@ -46,8 +46,13 @@ object Either {
     try Right(a)
     catch { case e: Exception => Left(e) }
 
-  def sequence[E, A](es: List[Either[E, A]]): Either[E, List[A]] = sys.error("todo")
+  def sequence[E, A](es: List[Either[E, A]]): Either[E, List[A]] =
+    traverse(es)(x => x)
 
-  def traverse[E, A, B](as: List[A])(f: A => Either[E, B]): Either[E, List[B]] = sys.error("todo")
+  def traverse[E, A, B](as: List[A])(f: A => Either[E, B]): Either[E, List[B]] =
+    as match {
+      case Nil => Right(Nil)
+      case h::t => (f(h) map2 traverse(t)(f))(_ :: _)
+    }
 
 }
