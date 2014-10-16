@@ -73,4 +73,8 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   it should "work in ListApplicative" in listApplicativeTest.testProduct
   it should "work in OptionApplicative" in optionApplicativeTest.testProduct
 
+  behavior of "12.1.4 traverse"
+  it should "work in ListApplicative" in listApplicativeTest.testTraverse
+  it should "work in OptionApplicative" in optionApplicativeTest.testTraverse
+
 }
