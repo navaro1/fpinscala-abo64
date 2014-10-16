@@ -109,15 +109,21 @@ trait Stream[+A] {
     foldRight(empty[B])((a,b) => f(a) append b)
 
   def zipWith[B,C](s2: Stream[B])(f: (A,B) => C): Stream[C] =
-    unfold((this,s2)) {
+    unfold(this,s2) {
       case (Cons(h,t),Cons(h2,t2)) => Some((f(h(),h2()), (t(), t2())))
       case _ => None
     }
 
-  def zip[B](s2: Stream[B]): Stream[(A,B)] = 
+  def zip[B](s2: Stream[B]): Stream[(A,B)] =
     zipWith(s2)((_,_))
 
-  def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] = sys.error("todo")
+  def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] =
+    unfold(this,s2) {
+      case (Cons(h,t), Cons(h2,t2)) => Some((Some(h()), Some(h2())), (t(), t2()))
+      case (Cons(h,t), Empty) => Some((Some(h()), None), (t(), Empty))
+      case (Empty, Cons(h2,t2)) => Some((None, Some(h2())), (Empty, t2()))
+      case _ => None
+    }
 
   def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
 
