@@ -116,6 +116,14 @@ trait Stream[+A] {
 
   def zip[B](s2: Stream[B]): Stream[(A,B)] = 
     zipWith(s2)((_,_))
+
+  def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] = sys.error("todo")
+
+  def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
+
+  def tails: Stream[Stream[A]] = sys.error("todo using unfold")
+
+  def scanRight[B](s: B)(f: (A, B) => B): Stream[B] = sys.error("todo")
 }
 
 case object Empty extends Stream[Nothing]

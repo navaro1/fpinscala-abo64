@@ -14,3 +14,6 @@ project.vim
 exercises/Worksheet.sc
 *.sc
 .worksheet
+
+.idea
+.idea_modules

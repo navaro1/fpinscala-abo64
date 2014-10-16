@@ -34,7 +34,7 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
 
   import ParserTypes._
 
-  override def run[A](p: Parser[A])(input: String): Either[ParseError,A] = // 149, 163
+  override def run[A](p: Parser[A])(input: String): Either[ParseError,A] = // 149, 163, 170
     p(Location(input)) match {
       case Success(a, _) => Right(a)
       case Failure(e, _) => Left(e)
@@ -42,7 +42,7 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
 
   private def input(loc: Location): String = loc.input.substring(loc.offset)
 
-  override implicit def string(s: String): Parser[String] = { // 149
+  override implicit def string(s: String): Parser[String] = { // 149, 167
     def headMatches(s1: String, s2: String): Boolean =
       s1.headOption.flatMap(c1 => s2.headOption.map(c2 => c1 == c2)).getOrElse(true)
 
@@ -52,14 +52,14 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
           headMatches(input(loc), s))
   }
 
-  override implicit def regex(r: Regex): Parser[String] = // 157
+  override implicit def regex(r: Regex): Parser[String] = // 157, 167
     loc =>
       r.findPrefixOf(input(loc)) match {
         case Some(prefix) => Success(prefix, prefix.length)
         case _ => Failure(loc.toError(s"""regex: "${input(loc)}" does not start with regex "$r""""), false)
       }
 
-  override def slice[A](p: Parser[A]): Parser[String] = { // 154
+  override def slice[A](p: Parser[A]): Parser[String] = { // 154, 167
     def slice(loc: Location, n: Int) = loc.input.substring(loc.offset, loc.offset + n)
 
     loc => p(loc) match {
@@ -75,7 +75,7 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
     loc => p(loc).mapError(_.push(loc, msg)) // 168
 
   override def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B] = // 157
-    s => p(s) match {
+    s => p(s) match { // 169
       case Success(a, n) => f(a)(s.advanceBy(n))
         .addCommit(n != 0)
         .advanceSuccess(n)
@@ -91,7 +91,6 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
       case r => r
     }
 
-  override def succeed[A](a: A): Parser[A] = // 153
+  override def succeed[A](a: A): Parser[A] = // 153, 167
     _ => Success(a, 0)
-
 }

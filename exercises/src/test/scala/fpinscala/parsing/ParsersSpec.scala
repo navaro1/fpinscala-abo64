@@ -145,16 +145,19 @@ class ParsersSpec extends FlatSpec with PropertyChecks with ParserTest[TestParse
 
   it should "hold for 149: singleCharLaw" in {
     import Laws._
+    def singleCharLaw(c: Char) = run(char(c))(c.toString) == Right(c) // 149
     forAll("c") { c: Char => assert(singleCharLaw(c), s"singleCharLaw($c)") }
   }
 
   it should "hold for 149: singleStringLaw" in {
     import Laws._
+    def singleStringLaw(s: String) = run(string(s))(s) == Right(s) // 149
     forAll("s") { s: String => assert(singleStringLaw(s), s"""singleStringLaw("$s")""") }
   }
 
   it should "hold for 153: succeedLaw" in {
     import Laws._
+    def succeedLaw[A](a: A)(s: String) = run(succeed(a))(s) == Right(a) // 153
     forAll("n", "s") { (n: Int, s: String) =>
       assert(succeedLaw(n)(s), s"""succeedLaw("$n", "$s")""") }
   }

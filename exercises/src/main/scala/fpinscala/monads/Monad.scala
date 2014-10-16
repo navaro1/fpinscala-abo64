@@ -79,16 +79,12 @@ trait Monad[M[_]] extends Functor[M] { self =>
   def join[A](mma: M[M[A]]): M[A] =
     mma.flatMap(ma => ma)
 
-  // Implement in terms of `join`:
-  def __flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
-
   implicit def toMonadOps[A](ma: M[A]): MonadOps[A] = MonadOps[A](ma)
   case class MonadOps[A](ma: M[A]) {
     def unit(a: => A) = self.unit(a)
     def flatMap[B](f: A => M[B]) = self.flatMap(ma)(f)
     def map[B](f: A => B) = self.map(ma)(f)
   }
-
 }
 
 object Monad {

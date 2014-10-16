@@ -119,11 +119,13 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     MonadTest(parMonad,
         (p1: Par[Int], p2: Par[Int]) => prun(executorService)(p1) == prun(executorService)(p2))
   }
+
   val parserMonadTest =
     MonadTest(parserMonad(ParserImpl),
       (p1: ParserTypes.Parser[Int], p2: ParserTypes.Parser[Int]) => {
         ParserImpl.run(p1)("") == ParserImpl.run(p1)("")
       })
+
   val idMonadTest = MonadTest(idMonad)
 
   behavior of "11.1.1 parMonad"
