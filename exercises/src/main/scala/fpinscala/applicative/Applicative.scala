@@ -27,6 +27,9 @@ trait Applicative[F[_]] extends Functor[F] {
 //    if (n <= 0) unit(List[A]()) else map2(fa, replicateM(n - 1, fa))(_ :: _)
     sequence(List.fill(n)(fa))
 
+  def product[A,B](fa: F[A], fb: F[B]): F[(A,B)] =
+    map2(fa, fb)((_, _))
+
   def factor[A,B](fa: F[A], fb: F[A]): F[(A,B)] = ???
 
   def product[G[_]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = ???
@@ -82,11 +85,11 @@ object Applicative {
   val optionApplicative = new Applicative[Option] {
     override def unit[A](a: => A): Option[A] = Some(a)
     override def map2[A,B,C](a: Option[A], b: Option[B])(f: (A,B) => C): Option[C] = {
-      def zip[A,B](a: Option[A], b: Option[B]) = (a,b) match {
+      def zip[A,B](a: Option[A], b: Option[B]): Option[(A,B)] = (a,b) match {
         case (Some(a), Some(b)) => Some((a,b))
         case _ => None
       }
-      zip(a, b) map f.tupled
+      zip(a,b) map f.tupled
     }
   }
 

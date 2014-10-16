@@ -4,6 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
 import org.scalacheck.Arbitrary
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
 
@@ -13,13 +14,17 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   // tests w/ Int are simplest
   private type T = Int
 
-  private implicit def arbitraryApplicative[M[_] <: Applicative[M]](m: M[T]): Arbitrary[M[T]] =
-    Arbitrary(Gen.choose(-100, 100) map(m.unit(_)))
+//  private implicit def arbitraryApplicative[M[_] <: Applicative[M]](m: M[T]): Arbitrary[M[T]] =
+//    Arbitrary(Gen.choose(-100, 100) map(m.unit(_)))
 
   private[ApplicativeSpec] case class ApplicativeTest[F[_]](M: Applicative[F],
       mEq: (F[Int], F[Int]) => Boolean = ((_:F[Int]) == (_:F[Int])))
 {
     import M._
+
+    private implicit def arbitraryA: Arbitrary[F[T]] =
+      Arbitrary(arbitrary[T] map (unit(_)))
+
     def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
     val f = kleisli[T](_ + 1)
     val g = kleisli(_ + 2)
@@ -32,7 +37,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
     def testSequence =
       forAll("l") { l: List[T] =>
-        val lma = l map(M.unit(_))
+        val lma = l map(unit(_))
         assert(sequence(lma) == unit(l))
       }
 
@@ -44,6 +49,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     def testReplicateM =
       forAll(Gen.choose(0, 100) label "n") { n: Int =>
         assert(replicateM(n, unit(1)) == unit(List.fill(n)(1)))
+      }
+
+    def testProduct =
+      forAll("a", "b") { (a: T, b: T) =>
+        assert(product(unit(a), unit(b)) == unit((a,b)))
       }
   }
 
@@ -58,5 +68,9 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   behavior of "12.1.2 replicateM"
   it should "work in ListApplicative" in listApplicativeTest.testReplicateM
   it should "work in OptionApplicative" in optionApplicativeTest.testReplicateM
+
+  behavior of "12.1.3 product"
+  it should "work in ListApplicative" in listApplicativeTest.testProduct
+  it should "work in OptionApplicative" in optionApplicativeTest.testProduct
 
 }
