@@ -103,5 +103,17 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   it should "work in ListApplicative" in listApplicativeTest.testMap4
   it should "work in OptionApplicative" in optionApplicativeTest.testMap4
 
+  behavior of "12.4 StreamApplicative.sequence"
+  it should "work" in {
+    import streamApplicative._
+    val l = List(1,2)
+    val sl = sequence(l map(unit(_)))
+    val gen = Gen.choose(0, 10)
+    forAll(gen label "n") { n =>
+      val takeN = sl.take(n).toList
+      assert(takeN == List.fill(n)(l))
+      assert(takeN == unit(l).take(n).toList)
+    }
+  }
 }
 
