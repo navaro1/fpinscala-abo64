@@ -25,9 +25,6 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     private implicit def arbitraryA: Arbitrary[F[T]] =
       Arbitrary(arbitrary[T] map (unit(_)))
 
-    def kleisli[B](f: T => B) = (a: T) => unit[B](f(a))
-    val f = kleisli[T](_ + 1)
-
     private def assertEq(m1: F[T], m2: F[T]) =
       assert(mEq(m1, m2), s"""eq($m1, $m2)""")
 
@@ -37,10 +34,12 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
         assert(sequence(lma) == unit(l))
       }
 
-    def testTraverse =
+    def testTraverse = {
+      val f = (a:T) => unit(a + 1)
       forAll("l") { l: List[T] =>
         assert(traverse(l)(f) == unit(l map(_ + 1)))
       }
+    }
 
     def testReplicateM =
       forAll(Gen.choose(0, 100) label "n") { n: Int =>
@@ -105,3 +104,4 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   it should "work in OptionApplicative" in optionApplicativeTest.testMap4
 
 }
+

@@ -105,7 +105,6 @@ object Applicative {
     }
   }
 
-
   val streamApplicative = new Applicative[Stream] {
 
     def unit[A](a: => A): Stream[A] =
