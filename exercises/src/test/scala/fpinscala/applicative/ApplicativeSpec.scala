@@ -6,20 +6,21 @@ import org.scalatest.prop.PropertyChecks
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-
+import java.util.Date
+import scala.util.Try
+import org.scalatest.Matchers
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ApplicativeSpec extends FlatSpec with PropertyChecks {
+class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
 
   // tests w/ Int are simplest
   private type T = Int
 
-//  private implicit def arbitraryApplicative[M[_] <: Applicative[M]](m: M[T]): Arbitrary[M[T]] =
-//    Arbitrary(Gen.choose(-100, 100) map(m.unit(_)))
+  //  private implicit def arbitraryApplicative[M[_] <: Applicative[M]](m: M[T]): Arbitrary[M[T]] =
+  //    Arbitrary(Gen.choose(-100, 100) map(m.unit(_)))
 
   private[ApplicativeSpec] case class ApplicativeTest[F[_]](M: Applicative[F],
-      mEq: (F[Int], F[Int]) => Boolean = ((_:F[Int]) == (_:F[Int])))
-{
+    mEq: (F[Int], F[Int]) => Boolean = ((_: F[Int]) == (_: F[Int]))) {
     import M._
 
     private implicit def arbitraryA: Arbitrary[F[T]] =
@@ -30,14 +31,14 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
     def testSequence =
       forAll("l") { l: List[T] =>
-        val lma = l map(unit(_))
+        val lma = l map (unit(_))
         assert(sequence(lma) == unit(l))
       }
 
     def testTraverse = {
-      val f = (a:T) => unit(a + 1)
+      val f = (a: T) => unit(a + 1)
       forAll("l") { l: List[T] =>
-        assert(traverse(l)(f) == unit(l map(_ + 1)))
+        assert(traverse(l)(f) == unit(l map (_ + 1)))
       }
     }
 
@@ -48,7 +49,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
     def testProduct =
       forAll("a", "b") { (a: T, b: T) =>
-        assert(product(unit(a), unit(b)) == unit((a,b)))
+        assert(product(unit(a), unit(b)) == unit((a, b)))
       }
 
     def mapPreservesStructure =
@@ -57,16 +58,16 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       }
 
     def testMap3 = {
-      val f = (a:T, b:T, c:T) => a + b + c
+      val f = (a: T, b: T, c: T) => a + b + c
       forAll("a", "b", "c") { (a: T, b: T, c: T) =>
-        assert(map3(unit(a), unit(b), unit(c))(f) == unit(f(a,b,c)))
+        assert(map3(unit(a), unit(b), unit(c))(f) == unit(f(a, b, c)))
       }
     }
 
     def testMap4 = {
-      val f = (a:T, b:T, c:T, d:T) => a + b + c + d
-      forAll("a", "b", "c", "d") { (a: T, b: T, c: T, d:T) =>
-        assert(map4(unit(a), unit(b), unit(c), unit(d))(f) == unit(f(a,b,c,d)))
+      val f = (a: T, b: T, c: T, d: T) => a + b + c + d
+      forAll("a", "b", "c", "d") { (a: T, b: T, c: T, d: T) =>
+        assert(map4(unit(a), unit(b), unit(c), unit(d))(f) == unit(f(a, b, c, d)))
       }
     }
   }
@@ -106,14 +107,87 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   behavior of "12.4 StreamApplicative.sequence"
   it should "work" in {
     import streamApplicative._
-    val l = List(1,2)
-    val sl = sequence(l map(unit(_)))
-    val gen = Gen.choose(0, 10)
-    forAll(gen label "n") { n =>
+    val l = List(1, 2)
+    val sl = sequence(l map (unit(_))) // sequence(List(unit(1), unit(2)))
+    forAll(Gen.choose(0, 10) label "n") { n =>
       val takeN = sl.take(n).toList
       assert(takeN == List.fill(n)(l))
       assert(takeN == unit(l).take(n).toList)
     }
+  }
+
+  case class WebForm(name: String, birthdate: Date, phoneNumber: String)
+
+  trait CheckResult[R[String, _]] {
+    type Result[A] = R[String, A]
+    def success[A](a: A): Result[A]
+    def failure[A](s: String): Result[A]
+
+    val NameFailure = failure[String]("Name cannot be empty")
+    val BirthDateFailure = failure[Date]("Birthdate must be in the form yyyy-MM-dd")
+    val PhoneNumberFailure = failure[String]("Phone number must be 10 digits")
+
+    val (goodName, badName) = ("Darth", "")
+    val (goodBirthDate, badBirthDate) = ("1970-01-01", "what?")
+    val (goodPhoneNumber, badPhoneNumber) = ("1234567890", "what?")
+
+    def parseDate(date: String): Date =
+      new java.text.SimpleDateFormat("yyyy-MM-dd").parse(date)
+    val WebFormSuccess = success(WebForm(goodName, parseDate(goodBirthDate), goodPhoneNumber))
+
+    def validName(name: String): Result[String] =
+      if (name != "") success(name)
+      else NameFailure
+    def validBirthdate(birthdate: String): Result[Date] =
+      Try {
+        success(parseDate(birthdate))
+      } getOrElse BirthDateFailure
+    def validPhone(phoneNumber: String): Result[String] =
+      if (phoneNumber.matches("[0-9]{10}"))
+        success(phoneNumber)
+      else PhoneNumberFailure
+
+    def getResults(toWebForm: (String, String, String) => Result[WebForm]) =
+      (toWebForm(goodName, goodBirthDate, goodPhoneNumber),
+        toWebForm(badName, goodBirthDate, goodPhoneNumber),
+        toWebForm(badName, badBirthDate, goodPhoneNumber),
+        toWebForm(badName, badBirthDate, badPhoneNumber))
+  }
+
+  behavior of "12.5 eitherMonad.flatMap"
+  it should "stop at first failure" in {
+    val checkResultEither = new CheckResult[Either] {
+      override def success[A](a: A) = Right(a)
+      override def failure[A](s: String) = Left(s)
+    }
+    import checkResultEither._
+    val eitherM = Monad.eitherMonad[String]
+    implicit class EitherOps[A](either: Either[String, A]) {
+      def flatMap[B](f: A => Either[String, B]) = eitherM.flatMap(either)(f)
+      def map[B](f: A => B) = eitherM.map(either)(f)
+    }
+
+    def monadicWebFormViaFlatMap(name: String, birthDate: String, phoneNumber: String) =
+//      for {
+//        n <- validName(name)
+//        d <- validBirthdate(birthDate)
+//        p <- validPhone(phoneNumber)
+//      } yield WebForm(n,d,p)
+      validName(name) flatMap (f1 =>
+        validBirthdate(birthDate) flatMap (f2 =>
+          validPhone(phoneNumber) map (f3 => WebForm(f1, f2, f3))))
+    val flatMapResults = getResults(monadicWebFormViaFlatMap)
+    assert(flatMapResults ==
+      (WebFormSuccess, NameFailure, NameFailure, NameFailure)) // always only first failure
+
+    def monadicWebFormViaMap3(name: String, birthDate: String, phoneNumber: String) =
+      eitherM.map3(
+        validName(name),
+        validBirthdate(birthDate),
+        validPhone(phoneNumber))(WebForm(_,_,_))
+    val map3Results = getResults(monadicWebFormViaMap3)
+    assert(map3Results ==
+      (WebFormSuccess, NameFailure, NameFailure, NameFailure)) // again: always only first failure
   }
 }
 
