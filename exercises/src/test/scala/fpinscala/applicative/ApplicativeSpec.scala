@@ -52,11 +52,6 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
         assert(product(unit(a), unit(b)) == unit((a, b)))
       }
 
-    def mapPreservesStructure =
-      forAll("n") { m: F[T] =>
-        assertEq(map(m)(identity[T]), m)
-      }
-
     def testMap3 = {
       val f = (a: T, b: T, c: T) => a + b + c
       forAll("a", "b", "c") { (a: T, b: T, c: T) =>
@@ -68,6 +63,54 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
       val f = (a: T, b: T, c: T, d: T) => a + b + c + d
       forAll("a", "b", "c", "d") { (a: T, b: T, c: T, d: T) =>
         assert(map4(unit(a), unit(b), unit(c), unit(d))(f) == unit(f(a, b, c, d)))
+      }
+    }
+
+    def applicativeLaws = {
+      functorLaws
+      identityLaws
+      associativeLaw
+      naturalityLaw
+    }
+
+    def functorLaws = { // 214
+      // map "preserves structure"
+      forAll("m") { m: F[T] =>
+        assertEq(map(m)(identity[T]), m)
+      }
+
+      val f = (a: T) => a + 1
+      val g = (a: T) => a + 2
+      forAll("m") { m: F[T] =>
+        assertEq(map(map(m)(g))(f), map(m)(f compose g))
+      }
+    }
+
+    def identityLaws = { // 215
+      // map2 "preserves structure"
+      forAll("m") { m: F[T] =>
+        assertEq(map2(unit(()), m)((_, a) => a), m)
+        assertEq(map2(m, unit(()))((a, _) => a), m)
+      }
+    }
+
+    def associativeLaw = { // 216
+      def assoc[A, B, C](p: (A, (B, C))): ((A, B), C) =
+        p match { case (a, (b, c)) => ((a, b), c) }
+
+      forAll("fa", "fb", "fc") { (fa: F[T], fb: F[T], fc: F[T]) =>
+        assert(product(product(fa, fb), fc) == map(product(fa, product(fb, fc)))(assoc))
+      }
+    }
+
+    def naturalityLaw = {
+      def productF[I, O, I2, O2](f: I => O, g: I2 => O2): (I, I2) => (O, O2) =
+        (i, i2) => (f(i), g(i2))
+      val f = (_:T) + 1
+      val g = (_:T) + 2
+
+      forAll("a", "b") { (a: F[T], b: F[T]) =>
+        assert(map2(a, b)(productF(f, g)) == product(map(a)(f), map(b)(g)))
       }
     }
   }
@@ -93,8 +136,8 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   it should "work in OptionApplicative" in optionApplicativeTest.testTraverse
 
   behavior of "12.2 map via unit and apply"
-  it should "work in ListApplicative" in listApplicativeTest.mapPreservesStructure
-  it should "work in OptionApplicative" in optionApplicativeTest.mapPreservesStructure
+  it should "obey the Functor laws in ListApplicative" in listApplicativeTest.functorLaws
+  it should "obey the Functor laws in OptionApplicative" in optionApplicativeTest.functorLaws
 
   behavior of "12.3.1 map3"
   it should "work in ListApplicative" in listApplicativeTest.testMap3
@@ -159,7 +202,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   }
 
   behavior of "12.5 eitherMonad.flatMap"
-  it should "stop at first failure" in {
+  it should "stop at first failure in WebForm example" in {
     val checkResultEither = new CheckResult[Either] {
       override def success[A](a: A) = Right(a)
       override def failure[A](s: String) = Left(s)
@@ -172,11 +215,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
     }
 
     def monadicWebFormViaFlatMap(name: String, birthDate: String, phoneNumber: String) =
-//      for {
-//        n <- validName(name)
-//        d <- validBirthdate(birthDate)
-//        p <- validPhone(phoneNumber)
-//      } yield WebForm(n,d,p)
+      //      for {
+      //        n <- validName(name)
+      //        d <- validBirthdate(birthDate)
+      //        p <- validPhone(phoneNumber)
+      //      } yield WebForm(n,d,p)
       validName(name) flatMap (f1 =>
         validBirthdate(birthDate) flatMap (f2 =>
           validPhone(phoneNumber) map (f3 => WebForm(f1, f2, f3))))
@@ -188,14 +231,14 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
       eitherM.map3(
         validName(name),
         validBirthdate(birthDate),
-        validPhone(phoneNumber))(WebForm(_,_,_))
+        validPhone(phoneNumber))(WebForm(_, _, _))
     val map3Results = getResults(monadicWebFormViaMap3)
     assert(map3Results ==
       (WebFormSuccess, NameFailure, NameFailure, NameFailure)) // again: always only first failure
   }
 
-  behavior of "12.6 validationMonad.map3"
-  it should "accumulate errors" in {
+  behavior of "12.6 validationApplicative"
+  it should "accumulate errors in WebForm example" in {
     val checkResultValidation = new CheckResult[Validation] {
       override def success[A](a: A) = Success(a)
       override def failure[A](s: String) = Failure(s, Vector())
@@ -206,15 +249,19 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
       validationApplicative.map3(
         validName(name),
         validBirthdate(birthDate),
-        validPhone(phoneNumber))(WebForm(_,_,_))
+        validPhone(phoneNumber))(WebForm(_, _, _))
     val map3Results = getResults(applicativeWebFormViaMap3)
     println(map3Results)
     assert(map3Results ==
       (WebFormSuccess,
-          failures(NameErrorMsg),
-          failures(NameErrorMsg, BirthDateErrorMsg),
-          failures(NameErrorMsg, BirthDateErrorMsg, PhoneNumberErrorMsg)))
+        failures(NameErrorMsg),
+        failures(NameErrorMsg, BirthDateErrorMsg),
+        failures(NameErrorMsg, BirthDateErrorMsg, PhoneNumberErrorMsg)))
 
     def failures(errors: String*) = Failure(errors.head, errors.tail.toVector)
   }
+
+  behavior of "p.214 ff. Functor Laws"
+  it should "hold for ListApplicative" in listApplicativeTest.applicativeLaws
+  it should "hold for OptionApplicative" in optionApplicativeTest.applicativeLaws
 }
