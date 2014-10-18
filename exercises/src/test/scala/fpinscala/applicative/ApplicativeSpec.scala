@@ -123,9 +123,13 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
     def success[A](a: A): Result[A]
     def failure[A](s: String): Result[A]
 
-    val NameFailure = failure[String]("Name cannot be empty")
-    val BirthDateFailure = failure[Date]("Birthdate must be in the form yyyy-MM-dd")
-    val PhoneNumberFailure = failure[String]("Phone number must be 10 digits")
+    val NameErrorMsg = "Name cannot be empty"
+    val BirthDateErrorMsg = "Birthdate must be in the form yyyy-MM-dd"
+    val PhoneNumberErrorMsg = "Phone number must be 10 digits"
+
+    val NameFailure = failure[String](NameErrorMsg)
+    val BirthDateFailure = failure[Date](BirthDateErrorMsg)
+    val PhoneNumberFailure = failure[String](PhoneNumberErrorMsg)
 
     val (goodName, badName) = ("Darth", "")
     val (goodBirthDate, badBirthDate) = ("1970-01-01", "what?")
@@ -189,5 +193,28 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
     assert(map3Results ==
       (WebFormSuccess, NameFailure, NameFailure, NameFailure)) // again: always only first failure
   }
-}
 
+  behavior of "12.6 validationMonad.map3"
+  it should "accumulate errors" in {
+    val checkResultValidation = new CheckResult[Validation] {
+      override def success[A](a: A) = Success(a)
+      override def failure[A](s: String) = Failure(s, Vector())
+    }
+    import checkResultValidation._
+
+    def applicativeWebFormViaMap3(name: String, birthDate: String, phoneNumber: String) =
+      validationApplicative.map3(
+        validName(name),
+        validBirthdate(birthDate),
+        validPhone(phoneNumber))(WebForm(_,_,_))
+    val map3Results = getResults(applicativeWebFormViaMap3)
+    println(map3Results)
+    assert(map3Results ==
+      (WebFormSuccess,
+          failures(NameErrorMsg),
+          failures(NameErrorMsg, BirthDateErrorMsg),
+          failures(NameErrorMsg, BirthDateErrorMsg, PhoneNumberErrorMsg)))
+
+    def failures(errors: String*) = Failure(errors.head, errors.tail.toVector)
+  }
+}

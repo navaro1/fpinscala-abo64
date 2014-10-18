@@ -4,10 +4,13 @@ package applicative
 import monads.Functor
 import state._
 import State._
-//import StateUtil._ // defined at bottom of this file
 import monoids._
 
-trait Applicative[F[_]] extends Functor[F] {
+trait Applicative[F[_]] extends Functor[F] { self =>
+
+  implicit class ApplicativeOps[A](fa: F[A]) {
+    def apply[B](fab: F[A => B]): F[B] = self.apply(fab)(fa)
+  }
 
   def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
     // CAUTION: apply and map2 are defined mutually!
@@ -37,7 +40,8 @@ trait Applicative[F[_]] extends Functor[F] {
     map2(fa, fb)((_, _))
 
   def map3[A, B, C, D](fa: F[A], fb: F[B], fc: F[C])(f: (A, B, C) => D): F[D] =
-    apply(apply(apply(unit(f.curried))(fa))(fb))(fc)
+//    apply(apply(apply(unit(f.curried))(fa))(fb))(fc)
+    fc apply (fb apply (fa apply unit(f.curried)))
 
   def map4[A, B, C, D, E](fa: F[A], fb: F[B], fc: F[C], fd: F[D])(f: (A, B, C, D) => E): F[E] =
     apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
@@ -105,7 +109,7 @@ object Applicative {
   }
 
   val optionApplicative = new Applicative[Option] {
-    override def unit[A](a: => A): Option[A] = Some(a)
+    override def unit[A](a: => A): Option[A] = Option(a)
     override def map2[A, B, C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = {
       def zip[A, B](a: Option[A], b: Option[B]): Option[(A, B)] = (a, b) match {
         case (Some(a), Some(b)) => Some((a, b))
@@ -125,7 +129,17 @@ object Applicative {
       a zip b map f.tupled
   }
 
-  def validationApplicative[E]: Applicative[({ type f[x] = Validation[E, x] })#f] = ???
+  def validationApplicative[E]: Applicative[({ type f[x] = Validation[E, x] })#f] =
+    new Applicative[({ type f[x] = Validation[E, x] })#f] {
+      def unit[A](a: => A) = Success(a)
+      override def map2[A,B,C](fa: Validation[E,A], fb: Validation[E,B])(f: (A, B) => C) =
+        (fa, fb) match {
+          case (Success(a), Success(b)) => Success(f(a, b))
+          case (Failure(h1,t1), Failure(h2,t2)) => Failure(h1, t1 ++ Vector(h2) ++ t2)
+          case (e@Failure(_, _), _) => e
+          case (_, e@Failure(_, _)) => e
+        }
+    }
 
   type Const[A, B] = A
 

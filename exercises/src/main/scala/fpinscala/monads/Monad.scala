@@ -111,7 +111,7 @@ object Monad {
   }
 
   val optionMonad: Monad[Option] = new Monad[Option] {
-    override def unit[A](a: => A): Option[A] = Some(a)
+    override def unit[A](a: => A): Option[A] = Option(a)
     override def flatMap[A,B](ma: Option[A])(f: A => Option[B]): Option[B] =
       ma flatMap f
   }
