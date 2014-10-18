@@ -113,6 +113,18 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
         assert(map2(a, b)(productF(f, g)) == product(map(a)(f), map(b)(g)))
       }
     }
+
+    def testSequenceMap = {
+//      def toFunction(m: Map[T,T]) = m.apply _
+      forAll("ttMap") { ttMap: Map[T,T] =>
+        val ofa = ttMap mapValues(unit(_))
+        val fMap = sequenceMap(ofa)
+        val fGet = fMap.map(m => m(_))
+        ttMap.keySet foreach { k: T =>
+          assert(unit(k).apply(fGet) == ofa(k))
+        }
+      }
+    }
   }
 
   import Applicative._
@@ -294,4 +306,8 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
       ApplicativeTest[({ type f[x] = Option[List[x]] })#f](optionListCompose)
     optionListComposeTest.applicativeLaws
   }
+
+  behavior of "12.12 sequenceMap"
+  it should "work in ListApplicative" in listApplicativeTest.testSequenceMap
+  it should "work in OptionApplicative" in optionApplicativeTest.testSequenceMap
 }

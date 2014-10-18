@@ -10,6 +10,7 @@ trait Applicative[F[_]] extends Functor[F] { self =>
 
   implicit class ApplicativeOps[A](fa: F[A]) {
     def apply[B](fab: F[A => B]): F[B] = self.apply(fab)(fa)
+    def map[B](f: A => B): F[B] = self.map(fa)(f)
   }
 
   def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
@@ -66,7 +67,11 @@ trait Applicative[F[_]] extends Functor[F] { self =>
     }
   }
 
-  def sequenceMap[K, V](ofa: Map[K, F[V]]): F[Map[K, V]] = ???
+  def sequenceMap[K, V](ofa: Map[K, F[V]]): F[Map[K, V]] =
+    ofa.foldLeft(unit(Map[K,V]())) {
+      case (acc, (k, fv)) => apply(map(acc)(m =>
+        (n: Map[K,V]) => m ++ n))(map(fv)((v: V) => Map(k -> v)))
+    }
 }
 
 case class Tree[+A](head: A, tail: List[Tree[A]])
