@@ -57,7 +57,14 @@ trait Applicative[F[_]] extends Functor[F] { self =>
     }
   }
 
-  def compose[G[_]](G: Applicative[G]): Applicative[({ type f[x] = F[G[x]] })#f] = ???
+  def compose[G[_]](G: Applicative[G]): Applicative[({ type f[x] = F[G[x]] })#f] = {
+    val self = this
+    new Applicative[({type f[x] = F[G[x]]})#f] {
+      def unit[A](a: => A) = self.unit(G.unit(a))
+      override def map2[A,B,C](fga: F[G[A]], fgb: F[G[B]])(f: (A,B) => C) =
+        self.map2(fga, fgb)(G.map2(_,_)(f))
+    }
+  }
 
   def sequenceMap[K, V](ofa: Map[K, F[V]]): F[Map[K, V]] = ???
 }
@@ -122,6 +129,7 @@ object Applicative {
         case (Some(a), Some(b)) => Some((a, b))
         case _ => None
       }
+      // product instead of zip would result in StackOverflow (circular definition)
       zip(a, b) map f.tupled
     }
   }

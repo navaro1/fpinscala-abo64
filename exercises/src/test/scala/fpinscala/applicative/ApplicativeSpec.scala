@@ -267,14 +267,31 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   behavior of "12.8 product of two applicative functors"
   it should "work" in {
 //    type ProductType[A[_],B[_]] = ({ type f[x] = (A[x], B[x]) })#f
-    val listOptionApplicative = listApplicative.product(optionApplicative)
-    val listOptionApplicativeTest =
-      ApplicativeTest[({ type f[x] = (List[x], Option[x]) })#f](listOptionApplicative)
-    listOptionApplicativeTest.applicativeLaws
+    val listOptionProduct = listApplicative.product(optionApplicative)
+    assert(listOptionProduct.unit(1) == (List(1), (Some(1))))
+    val listOptionProductTest =
+      ApplicativeTest[({ type f[x] = (List[x], Option[x]) })#f](listOptionProduct)
+    listOptionProductTest.applicativeLaws
 
-    val optionListApplicative = optionApplicative.product(listApplicative)
-    val optionListApplicativeTest =
-      ApplicativeTest[({ type f[x] = (Option[x], List[x]) })#f](optionListApplicative)
-    optionListApplicativeTest.applicativeLaws
+    val optionListProduct = optionApplicative.product(listApplicative)
+    assert(optionListProduct.unit(1) == (Some(1), (List(1))))
+    val optionListProductTest =
+      ApplicativeTest[({ type f[x] = (Option[x], List[x]) })#f](optionListProduct)
+    optionListProductTest.applicativeLaws
+  }
+
+  behavior of "12.9 compose of two applicative functors"
+  it should "work" in {
+    val listOptionCompose = listApplicative.compose(optionApplicative)
+    assert(listOptionCompose.unit(1) == List(Some(1)))
+    val listOptionComposeTest =
+      ApplicativeTest[({ type f[x] = List[Option[x]] })#f](listOptionCompose)
+    listOptionComposeTest.applicativeLaws
+
+    val optionListCompose = optionApplicative.compose(listApplicative)
+    assert(optionListCompose.unit(1) == Some(List(1)))
+    val optionListComposeTest =
+      ApplicativeTest[({ type f[x] = Option[List[x]] })#f](optionListCompose)
+    optionListComposeTest.applicativeLaws
   }
 }
