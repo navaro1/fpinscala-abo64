@@ -251,7 +251,6 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
         validBirthdate(birthDate),
         validPhone(phoneNumber))(WebForm(_, _, _))
     val map3Results = getResults(applicativeWebFormViaMap3)
-    println(map3Results)
     assert(map3Results ==
       (WebFormSuccess,
         failures(NameErrorMsg),
@@ -264,4 +263,18 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   behavior of "p.214 ff. Functor Laws"
   it should "hold for ListApplicative" in listApplicativeTest.applicativeLaws
   it should "hold for OptionApplicative" in optionApplicativeTest.applicativeLaws
+
+  behavior of "12.8 product of two applicative functors"
+  it should "work" in {
+//    type ProductType[A[_],B[_]] = ({ type f[x] = (A[x], B[x]) })#f
+    val listOptionApplicative = listApplicative.product(optionApplicative)
+    val listOptionApplicativeTest =
+      ApplicativeTest[({ type f[x] = (List[x], Option[x]) })#f](listOptionApplicative)
+    listOptionApplicativeTest.applicativeLaws
+
+    val optionListApplicative = optionApplicative.product(listApplicative)
+    val optionListApplicativeTest =
+      ApplicativeTest[({ type f[x] = (Option[x], List[x]) })#f](optionListApplicative)
+    optionListApplicativeTest.applicativeLaws
+  }
 }
