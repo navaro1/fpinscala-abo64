@@ -217,11 +217,18 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
 }
 
 object Traverse {
-  val listTraverse = ???
+  val listTraverse = new Traverse[List] {
+    override def traverse[M[_],A,B](as: List[A])(f: A => M[B])(implicit M: Applicative[M]): M[List[B]] =
+      as.foldRight(M.unit(List[B]()))((a, fbs) => M.map2(f(a), fbs)(_ :: _))
+  }
 
-  val optionTraverse = ???
+  val optionTraverse = new Traverse[Option] {
+    
+  }
 
-  val treeTraverse = ???
+  val treeTraverse = new Traverse[Tree] {
+    
+  }
 }
 
 // The `get` and `set` functions on `State` are used above,

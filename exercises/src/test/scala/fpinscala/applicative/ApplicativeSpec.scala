@@ -116,11 +116,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
 
     def testSequenceMap = {
 //      def toFunction(m: Map[T,T]) = m.apply _
-      forAll("ttMap") { ttMap: Map[T,T] =>
-        val ofa = ttMap mapValues(unit(_))
+      forAll("ofa") { ofa: Map[T,F[T]] =>
+//        val ofa = ttMap mapValues(unit(_))
         val fMap = sequenceMap(ofa)
-        val fGet = fMap.map(m => m(_))
-        ttMap.keySet foreach { k: T =>
+        val fGet: F[T => T] = fMap.map(m => m(_)) // Map as Function
+        ofa.keySet foreach { k: T =>
           assert(unit(k).apply(fGet) == ofa(k))
         }
       }
@@ -310,4 +310,15 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   behavior of "12.12 sequenceMap"
   it should "work in ListApplicative" in listApplicativeTest.testSequenceMap
   it should "work in OptionApplicative" in optionApplicativeTest.testSequenceMap
+
+  import Traverse._
+
+  behavior of "12.13.1 listTraverse"
+  it should "result in None if List[Option[T]] contains None" in {
+    implicit val oa = optionApplicative
+    forAll("fma") { fma: List[Option[T]] =>
+      val expected = if (fma.contains(None)) None else Some(fma map(_.get))
+      assert(listTraverse.sequence(fma) == expected)
+    }
+  }
 }
