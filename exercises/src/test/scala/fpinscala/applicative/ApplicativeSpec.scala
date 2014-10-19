@@ -335,4 +335,24 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
       assert(optionTraverse.sequence(fma) == expected)
     }
   }
+
+  behavior of "12.13.3 treeTraverse"
+  it should "result in None if Tree[Option[T]] contains None" in {
+    implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
+      val MaxTreeDepth = 5 // to prevent StackOverflows
+      def arbitraryTree(depth: Int): Gen[Tree[T]] =
+        for {
+          h <- arbitrary[T]
+          n <- Gen.choose(0, depth)
+        } yield Tree(h, List.fill(n)(arbitraryTree(depth - 1).sample.get))
+      Arbitrary(arbitraryTree(MaxTreeDepth))
+    }
+    def contains[A](ta: Tree[A], a: A): Boolean =
+      ta.head == a || ta.tail.exists(contains(_, a))
+    implicit val oa = optionApplicative
+    forAll("toa") { toa: Tree[Option[T]] =>
+      val expected = if (contains(toa, None)) None else Some(treeTraverse.map(toa)(_.get))
+      assert(treeTraverse.sequence(toa) == expected)
+    }
+  }
 }

@@ -180,6 +180,7 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
   val idMonad = new Monad[Id] {
     def unit[A](a: => A) = a
     override def flatMap[A, B](a: A)(f: A => B): B = f(a)
+    override def map[A, B](a: A)(f: A => B): B = flatMap(a)(f) // avoid circular definition
   }
 
   def map[A, B](fa: F[A])(f: A => B): F[B] =
@@ -231,7 +232,8 @@ object Traverse {
   }
 
   val treeTraverse = new Traverse[Tree] {
-    
+    override def traverse[M[_],A,B](ta: Tree[A])(f: A => M[B])(implicit M: Applicative[M]): M[Tree[B]] =
+      M.map2(f(ta.head), listTraverse.traverse(ta.tail)(a => traverse(a)(f)))(Tree(_, _))
   }
 }
 
