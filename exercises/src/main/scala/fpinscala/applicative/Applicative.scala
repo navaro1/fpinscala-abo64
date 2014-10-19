@@ -223,7 +223,11 @@ object Traverse {
   }
 
   val optionTraverse = new Traverse[Option] {
-    
+    override def traverse[M[_],A,B](oa: Option[A])(f: A => M[B])(implicit M: Applicative[M]): M[Option[B]] =
+      oa match {
+        case Some(a) => M.map(f(a))(Some(_))
+        case None    => M.unit(None)
+      }
   }
 
   val treeTraverse = new Traverse[Tree] {

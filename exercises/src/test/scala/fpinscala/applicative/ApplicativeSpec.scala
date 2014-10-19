@@ -321,4 +321,18 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
       assert(listTraverse.sequence(fma) == expected)
     }
   }
+
+  behavior of "12.13.2 optionTraverse"
+  it should "work" in {
+    implicit val la = listApplicative
+    forAll("fma") { fma: Option[List[T]] =>
+      val expected =
+        if (fma.isEmpty) List(None)
+        else {
+          val l = fma.get
+          if (l.isEmpty) List() else List(Some(l.head))
+        }
+      assert(optionTraverse.sequence(fma) == expected)
+    }
+  }
 }
