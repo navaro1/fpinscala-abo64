@@ -105,8 +105,8 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     def naturalityLaw = {
       def productF[I, O, I2, O2](f: I => O, g: I2 => O2): (I, I2) => (O, O2) =
         (i, i2) => (f(i), g(i2))
-      val f = (_:T) + 1
-      val g = (_:T) + 2
+      val f = (_: T) + 1
+      val g = (_: T) + 2
 
       forAll("a", "b") { (a: F[T], b: F[T]) =>
         assert(map2(a, b)(productF(f, g)) == product(map(a)(f), map(b)(g)))
@@ -114,9 +114,9 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     }
 
     def testSequenceMap = {
-//      def toFunction(m: Map[T,T]) = m.apply _
-      forAll("ofa") { ofa: Map[T,F[T]] =>
-//        val ofa = ttMap mapValues(unit(_))
+      //      def toFunction(m: Map[T,T]) = m.apply _
+      forAll("ofa") { ofa: Map[T, F[T]] =>
+        //        val ofa = ttMap mapValues(unit(_))
         val fMap = sequenceMap(ofa)
         val fGet: F[T => T] = fMap.map(m => m(_)) // Map as Function
         ofa.keySet foreach { k: T =>
@@ -277,7 +277,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
   behavior of "12.8 product of two applicative functors"
   it should "work" in {
-//    type ProductType[A[_],B[_]] = ({ type f[x] = (A[x], B[x]) })#f
+    //    type ProductType[A[_],B[_]] = ({ type f[x] = (A[x], B[x]) })#f
     val listOptionProduct = listApplicative.product(optionApplicative)
     assert(listOptionProduct.unit(1) == (List(1), (Some(1))))
     val listOptionProductTest =
@@ -316,7 +316,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   it should "behave as described on page 219" in {
     implicit val oa = optionApplicative
     forAll("fma") { fma: List[Option[T]] =>
-      val expected = if (fma.contains(None)) None else Some(fma map(_.get))
+      val expected = if (fma.contains(None)) None else Some(fma map (_.get))
       assert(listTraverse.sequence(fma) == expected)
     }
   }
@@ -336,14 +336,14 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   }
 
   private implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
-      val MaxTreeDepth = 5 // to prevent StackOverflows
-      def arbitraryTree(maxDepth: Int): Gen[Tree[T]] =
-        for {
-          h <- arbitrary[T]
-          numChildren <- Gen.choose(0, maxDepth)
-        } yield Tree(h, List.fill(numChildren)(arbitraryTree(maxDepth - 1).sample.get))
-      Arbitrary(arbitraryTree(MaxTreeDepth))
-    }
+    val MaxTreeDepth = 5 // to prevent StackOverflows
+    def arbitraryTree(maxDepth: Int): Gen[Tree[T]] =
+      for {
+        h <- arbitrary[T]
+        numChildren <- Gen.choose(0, maxDepth)
+      } yield Tree(h, List.fill(numChildren)(arbitraryTree(maxDepth - 1).sample.get))
+    Arbitrary(arbitraryTree(MaxTreeDepth))
+  }
 
   behavior of "12.13.3 treeTraverse"
   it should "behave as described on page 219" in {
@@ -356,22 +356,32 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  private[ApplicativeSpec] case class TraverseTest[F[_]](M: Traverse[F]) {
+    import M._
+
+    def testMap[B](f: T => B)(mf: F[T] => F[B])(implicit ev: Arbitrary[F[T]]) =
+      forAll("tt") { tt: F[T] =>
+        assert(map(tt)(_.toString) == mf(tt))
+      }
+  }
+
+  private val listTraverseTest = new TraverseTest(listTraverse)
+  private val optionTraverseTest = new TraverseTest(optionTraverse)
+  private val treeTraverseTest = new TraverseTest(treeTraverse)
+
   behavior of "12.14 Traverse.map via traverse"
-  it should "work for listTraverse" in {
-    forAll("ts") { ts: List[T] =>
-      assert(listTraverse.map(ts)(_.toString) == ts.map(_.toString))
-    }
-  }
-  it should "work for optionTraverse" in {
-    forAll("ts") { ot: Option[T] =>
-      assert(optionTraverse.map(ot)(_.toString) == ot.map(_.toString))
-    }
-  }
+  it should "work for listTraverse" in listTraverseTest.testMap(_.toString)(_.map(_.toString))
+
+  it should "work for optionTraverse" in optionTraverseTest.testMap(_.toString)(_.map(_.toString))
+
   it should "work for treeTraverse" in {
-    def mapTree[A,B](tt: Tree[A])(f: A => B): Tree[B] = 
+    def mapTree[A, B](tt: Tree[A])(f: A => B): Tree[B] =
       Tree(f(tt.head), tt.tail.map(mapTree(_)(f)))
-    forAll("tt") { tt: Tree[T] =>
-      assert(treeTraverse.map(tt)(_.toString) == mapTree(tt)(_.toString))
-    }
+    treeTraverseTest.testMap(_.toString)(mapTree(_)(_.toString))
+  }
+
+  behavior of "12.15 Traverse.reverse"
+  it should "work for listTraverse" in {
+
   }
 }
