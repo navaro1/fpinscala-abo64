@@ -107,6 +107,8 @@ object Monad {
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
     override def flatMap[A, B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
       st flatMap f
+    override def map[A, B](st: State[S, A])(f: A => B): State[S, B] = // avoid circular definition
+      st map f  // flatMap(st)(a => unit(f(a)))
   }
 
   def composeM[F[_], N[_]](implicit F: Monad[F], N: Monad[N], T: Traverse[N]): Monad[({ type f[x] = F[N[x]] })#f] = ???
@@ -198,7 +200,7 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
   def mapAccum[S, A, B](fa: F[A], s: S)(f: (A, S) => (B, S)): (F[B], S) =
     traverseS(fa)((a: A) => (for {
       s1 <- get[S]
-      (b, s2) = f(a, s)
+      (b, s2) = f(a, s1) // BUG: s1 instead of s !!!!!!!!!!!!!11
       _ <- set(s2)
     } yield b)).run(s)
 
@@ -208,7 +210,8 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
   def zipWithIndex[A](fa: F[A]): F[(A, Int)] =
     mapAccum(fa, 0)((a, s) => ((a, s), s + 1))._1
 
-  def reverse[A](fa: F[A]): F[A] = ???
+  def reverse[A](fa: F[A]): F[A] =
+    mapAccum(fa, toList(fa).reverse)((_, as) => (as.head, as.tail))._1
 
   override def foldLeft[A, B](fa: F[A])(z: B)(f: (B, A) => B): B = ???
 

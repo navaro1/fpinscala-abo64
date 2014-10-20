@@ -363,6 +363,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       forAll("tt") { tt: F[T] =>
         assert(map(tt)(_.toString) == mf(tt))
       }
+
+    def testReverse[B](mf: F[T] => F[T])(implicit ev: Arbitrary[F[T]]) =
+      forAll("tt") { tt: F[T] =>
+        assert(reverse(tt) == mf(tt))
+      }
   }
 
   private val listTraverseTest = new TraverseTest(listTraverse)
@@ -371,9 +376,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
   behavior of "12.14 Traverse.map via traverse"
   it should "work for listTraverse" in listTraverseTest.testMap(_.toString)(_.map(_.toString))
-
   it should "work for optionTraverse" in optionTraverseTest.testMap(_.toString)(_.map(_.toString))
-
   it should "work for treeTraverse" in {
     def mapTree[A, B](tt: Tree[A])(f: A => B): Tree[B] =
       Tree(f(tt.head), tt.tail.map(mapTree(_)(f)))
@@ -381,7 +384,26 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   }
 
   behavior of "12.15 Traverse.reverse"
-  it should "work for listTraverse" in {
+  it should "work for listTraverse" in listTraverseTest.testReverse(_.reverse)
+  it should "work for optionTraverse" in optionTraverseTest.testReverse(identity[Option[T]])
+  //  it should "work for treeTraverse" in {
+  //    def reverseTree[A](tt: Tree[A], acc: List[Tree[A]]): Tree[A] = tt match {
+  //      case Tree(head, Nil) => Tree(head, acc)
+  //      case Tree(head, h::t) => reverseTree(h, List(Tree(head, acc)))
+  //    }
+  //    val t = Tree(1, List(Tree(2, Nil), Tree(3, Nil)))
+  //    println(treeTraverse.reverse(t))
+  //    println(reverseTree(t, Nil))
+  //    treeTraverseTest.testReverse(reverseTree[T](_, Nil))
+  //  }
+  it should "obey the law on page 223 for listTraverse" in {
+      import listTraverse._
+      type F[T] = List[T]
+      forAll("x", "y") { (x: F[T], y: F[T]) =>
+        assert(
+          toList(reverse(x)) ++ toList(reverse(y)) ==
+          reverse(toList(y) ++ toList(x)))
+      }
+    }
 
-  }
 }
