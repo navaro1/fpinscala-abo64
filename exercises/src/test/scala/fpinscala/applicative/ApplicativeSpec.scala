@@ -335,9 +335,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     }
   }
 
-  behavior of "12.13.3 treeTraverse"
-  it should "behave as described on page 219" in {
-    implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
+  private implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
       val MaxTreeDepth = 5 // to prevent StackOverflows
       def arbitraryTree(maxDepth: Int): Gen[Tree[T]] =
         for {
@@ -346,12 +344,34 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
         } yield Tree(h, List.fill(numChildren)(arbitraryTree(maxDepth - 1).sample.get))
       Arbitrary(arbitraryTree(MaxTreeDepth))
     }
+
+  behavior of "12.13.3 treeTraverse"
+  it should "behave as described on page 219" in {
     def contains[A](ta: Tree[A], a: A): Boolean =
       ta.head == a || ta.tail.exists(contains(_, a))
     implicit val oa = optionApplicative
     forAll("toa") { toa: Tree[Option[T]] =>
       val expected = if (contains(toa, None)) None else Some(treeTraverse.map(toa)(_.get))
       assert(treeTraverse.sequence(toa) == expected)
+    }
+  }
+
+  behavior of "12.14 Traverse.map via traverse"
+  it should "work for listTraverse" in {
+    forAll("ts") { ts: List[T] =>
+      assert(listTraverse.map(ts)(_.toString) == ts.map(_.toString))
+    }
+  }
+  it should "work for optionTraverse" in {
+    forAll("ts") { ot: Option[T] =>
+      assert(optionTraverse.map(ot)(_.toString) == ot.map(_.toString))
+    }
+  }
+  it should "work for treeTraverse" in {
+    def mapTree[A,B](tt: Tree[A])(f: A => B): Tree[B] = 
+      Tree(f(tt.head), tt.tail.map(mapTree(_)(f)))
+    forAll("tt") { tt: Tree[T] =>
+      assert(treeTraverse.map(tt)(_.toString) == mapTree(tt)(_.toString))
     }
   }
 }
