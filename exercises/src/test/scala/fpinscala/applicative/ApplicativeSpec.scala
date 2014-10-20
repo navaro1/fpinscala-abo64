@@ -8,10 +8,9 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import java.util.Date
 import scala.util.Try
-import org.scalatest.Matchers
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
+class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
   // tests w/ Int are simplest
   private type T = Int
@@ -314,7 +313,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   import Traverse._
 
   behavior of "12.13.1 listTraverse"
-  it should "result in None if List[Option[T]] contains None" in {
+  it should "behave as described on page 219" in {
     implicit val oa = optionApplicative
     forAll("fma") { fma: List[Option[T]] =>
       val expected = if (fma.contains(None)) None else Some(fma map(_.get))
@@ -323,7 +322,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   }
 
   behavior of "12.13.2 optionTraverse"
-  it should "work" in {
+  it should "behave as described on page 219" in {
     implicit val la = listApplicative
     forAll("fma") { fma: Option[List[T]] =>
       val expected =
@@ -337,7 +336,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   }
 
   behavior of "12.13.3 treeTraverse"
-  it should "result in None if Tree[Option[T]] contains None" in {
+  it should "behave as described on page 219" in {
     implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
       val MaxTreeDepth = 5 // to prevent StackOverflows
       def arbitraryTree(maxDepth: Int): Gen[Tree[T]] =
