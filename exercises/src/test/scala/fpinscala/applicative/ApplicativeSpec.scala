@@ -340,11 +340,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks with Matchers {
   it should "result in None if Tree[Option[T]] contains None" in {
     implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
       val MaxTreeDepth = 5 // to prevent StackOverflows
-      def arbitraryTree(depth: Int): Gen[Tree[T]] =
+      def arbitraryTree(maxDepth: Int): Gen[Tree[T]] =
         for {
           h <- arbitrary[T]
-          n <- Gen.choose(0, depth)
-        } yield Tree(h, List.fill(n)(arbitraryTree(depth - 1).sample.get))
+          numChildren <- Gen.choose(0, maxDepth)
+        } yield Tree(h, List.fill(numChildren)(arbitraryTree(maxDepth - 1).sample.get))
       Arbitrary(arbitraryTree(MaxTreeDepth))
     }
     def contains[A](ta: Tree[A], a: A): Boolean =
