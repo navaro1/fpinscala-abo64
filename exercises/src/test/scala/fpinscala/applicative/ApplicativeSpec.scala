@@ -368,6 +368,11 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       forAll("tt") { tt: F[T] =>
         assert(reverse(tt) == mf(tt))
       }
+
+    def testFoldLeft(f: (Int,T) => Int)(sum: F[T] => Int)(implicit ev: Arbitrary[F[T]]) =
+      forAll("tt") { tt: F[T] =>
+        assert(foldLeft(tt)(0)(f) == sum(tt))
+      }
   }
 
   private val listTraverseTest = new TraverseTest(listTraverse)
@@ -383,7 +388,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     treeTraverseTest.testMap(_.toString)(mapTree(_)(_.toString))
   }
 
-  behavior of "12.15 Traverse.reverse"
+  behavior of "12.16 Traverse.reverse"
   it should "work for listTraverse" in listTraverseTest.testReverse(_.reverse)
   it should "work for optionTraverse" in optionTraverseTest.testReverse(identity[Option[T]])
   it should "obey the law on page 223 for listTraverse" in {
@@ -395,4 +400,12 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
           reverse(toList(y) ++ toList(x)))
       }
     }
+
+  behavior of "12.17 Traverse.foldLeft via mapAccum"
+  it should "work for listTraverse" in listTraverseTest.testFoldLeft(_ + _)(_.sum)
+  it should "work for optionTraverse" in optionTraverseTest.testFoldLeft(_ + _)(_.getOrElse(0))
+  it should "work for treeTraverse" in {
+    def sumTree(tt: Tree[Int]): Int = tt.head + tt.tail.map(sumTree).sum
+    treeTraverseTest.testFoldLeft(_ + _)(sumTree)
+  }
 }
