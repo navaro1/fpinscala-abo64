@@ -386,16 +386,6 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
   behavior of "12.15 Traverse.reverse"
   it should "work for listTraverse" in listTraverseTest.testReverse(_.reverse)
   it should "work for optionTraverse" in optionTraverseTest.testReverse(identity[Option[T]])
-  //  it should "work for treeTraverse" in {
-  //    def reverseTree[A](tt: Tree[A], acc: List[Tree[A]]): Tree[A] = tt match {
-  //      case Tree(head, Nil) => Tree(head, acc)
-  //      case Tree(head, h::t) => reverseTree(h, List(Tree(head, acc)))
-  //    }
-  //    val t = Tree(1, List(Tree(2, Nil), Tree(3, Nil)))
-  //    println(treeTraverse.reverse(t))
-  //    println(reverseTree(t, Nil))
-  //    treeTraverseTest.testReverse(reverseTree[T](_, Nil))
-  //  }
   it should "obey the law on page 223 for listTraverse" in {
       import listTraverse._
       type F[T] = List[T]
@@ -405,5 +395,4 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
           reverse(toList(y) ++ toList(x)))
       }
     }
-
 }
