@@ -373,6 +373,14 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       forAll("tt") { tt: F[T] =>
         assert(foldLeft(tt)(0)(f) == sum(tt))
       }
+
+    implicit val la = listApplicative
+    implicit val lo = optionApplicative
+    def testFuse(expected: F[T] => (List[F[String]], Option[F[String]]))(implicit ev: Arbitrary[F[T]]) =
+      forAll("tt") { tt: F[T] =>
+        assert(fuse[List,Option,T,String](tt)(a => List(a.toString), a => Option(a.toString)) ==
+          expected(tt))
+      }
   }
 
   private val listTraverseTest = new TraverseTest(listTraverse)
@@ -408,4 +416,10 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     def sumTree(tt: Tree[Int]): Int = tt.head + tt.tail.map(sumTree).sum
     treeTraverseTest.testFoldLeft(_ + _)(sumTree)
   }
+
+  behavior of "12.18 Traverse.fuse"
+  it should "work for listTraverse" in
+    listTraverseTest.testFuse(lt => (List(lt map(_.toString)), Option(lt map(_.toString))))
+  it should "work for optionTraverse" in
+    optionTraverseTest.testFuse(lt => (List(lt map(_.toString)), Option(lt map(_.toString))))
 }
