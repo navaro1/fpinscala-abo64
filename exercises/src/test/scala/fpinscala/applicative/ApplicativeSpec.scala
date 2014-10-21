@@ -422,4 +422,14 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     listTraverseTest.testFuse(lt => (List(lt map(_.toString)), Option(lt map(_.toString))))
   it should "work for optionTraverse" in
     optionTraverseTest.testFuse(lt => (List(lt map(_.toString)), Option(lt map(_.toString))))
+
+  behavior of "12.19 Traverse.compose"
+  it should "work for listTraverse" in
+    forAll("lo") { lo: List[Option[T]] =>
+      assert(listTraverse.compose(optionTraverse).map(lo)(identity) == lo)
+    }
+  it should "work for optionTraverse" in
+    forAll("ol") { ol: Option[List[T]] =>
+      assert(optionTraverse.compose(listTraverse).map(ol)(identity) == ol)
+    }
 }
