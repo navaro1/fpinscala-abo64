@@ -376,6 +376,7 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
 
     implicit val la = listApplicative
     implicit val lo = optionApplicative
+
     def testFuse(expected: F[T] => (List[F[String]], Option[F[String]]))(implicit ev: Arbitrary[F[T]]) =
       forAll("tt") { tt: F[T] =>
         assert(fuse[List,Option,T,String](tt)(a => List(a.toString), a => Option(a.toString)) ==
