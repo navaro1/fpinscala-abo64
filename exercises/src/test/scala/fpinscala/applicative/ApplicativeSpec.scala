@@ -432,4 +432,43 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
     forAll("ol") { ol: Option[List[T]] =>
       assert(optionTraverse.compose(listTraverse).map(ol)(identity) == ol)
     }
+
+  behavior of "12.20 Monad.composeM"
+
+  private def listMonad: Monad[List] =
+    new Monad[List] {
+    override def unit[A](a: => A): List[A] = List(a)
+    override def map[A,B](ma: List[A])(f: A => B): List[B] =
+      ma map f
+    override def flatMap[A,B](ma: List[A])(f: A => List[B]): List[B] =
+      ma flatMap f
+  }
+
+  private def optionMonad: Monad[Option] =
+    new Monad[Option] {
+    override def unit[A](a: => A): Option[A] = Option(a)
+    override def map[A,B](ma: Option[A])(f: A => B): Option[B] =
+      ma map f
+    override def flatMap[A,B](ma: Option[A])(f: A => Option[B]): Option[B] =
+      ma flatMap f
+  }
+
+  it should "work for listTraverse" in {
+    implicit val lm = listMonad
+    implicit val om = optionMonad
+    implicit val lt = listTraverse
+    implicit val ot = optionTraverse
+    forAll("lo") { lo: List[Option[T]] =>
+      assert(Monad.composeM[List, Option].flatMap(lo)(x => List(Option(x))) == lo)
+    }
+  }
+  it should "work for optionTraverse" in {
+    implicit val lm = listMonad
+    implicit val om = optionMonad
+    implicit val lt = listTraverse
+    implicit val ot = optionTraverse
+    forAll("ol") { ol: Option[List[T]] =>
+      assert(Monad.composeM[Option, List].flatMap(ol)(x => Option(List(x))) == ol)
+    }
+  }
 }
