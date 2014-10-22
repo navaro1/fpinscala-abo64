@@ -33,7 +33,8 @@ object RNG {
   def nonNegativeInt(rng: RNG): (Int, RNG) = {
     val (i, r) = rng.nextInt
 //    if (i != Int.MinValue) (math.abs(i), r) else nonNegativeInt(r)
-    (if (i < 0) -(i + 1) else i, r)
+//    (if (i < 0) -(i + 1) else i, r)
+    if (i != Int.MinValue) (math.abs(i), r) else (0, r)
   }
 
   def boolean(rng: RNG): (Boolean, RNG) =
