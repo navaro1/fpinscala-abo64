@@ -31,7 +31,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     forAll("n: Int") { n: Int => test(n) }
 
   private def testMean[A: Numeric](rand: Rand[A], meanCheck: Double => Unit) = {
-    val NumIterations = 1000000
+    val NumIterations = 100000
     val ev = implicitly[Numeric[A]]
     val rng: RNG = Simple(42)
     val (sumRNs, _) = (1 to NumIterations).foldLeft((0d, rng)) {
