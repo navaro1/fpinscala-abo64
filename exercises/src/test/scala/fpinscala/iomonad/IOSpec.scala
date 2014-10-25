@@ -20,7 +20,8 @@ class IOSpec extends FlatSpec with PropertyChecks {
     def flatMapGen(depth: Int): Gen[FlatMap[F,A,A]] = {
       for {
         s <- freeGen(depth - 1)
-        f <- freeGen(depth - 1) map((a:A) => _)
+//        f <- freeGen(depth - 1) map((a:A) => _)
+        f = (a:A) => IO3.Return[F,A](a)
       } yield FlatMap(s, f)
     }
 
@@ -49,10 +50,30 @@ class IOSpec extends FlatSpec with PropertyChecks {
     def eval[A](free: Free[Function0, A]): A = free match {
       case Return(a) => a
       case Suspend(r) => r()
-      case FlatMap(s:Free[Function0, A],f) => eval(f(eval(s)))
+      case FlatMap(s: Free[Function0, A],f) => eval(f(eval(s)))
     }
     forAll("a") { a: Free[Function0,Int] =>
       assert(runTrampoline(a) == eval(a))
     }
   }
+
+  behavior of "13.3 run"
+  it should "work" in {
+    implicit val listMonad =
+      new Monad[List] {
+        override def unit[A](a: => A) = List(a)
+        override def flatMap[A,B](as: List[A])(f: A => List[B]) = as flatMap f
+      }
+
+    def eval[A](free: Free[List, A]): List[A] = free match {
+      case Return(a) => List(a)
+      case Suspend(r) => r
+      case FlatMap(s: Free[List, A], f) => eval(s) //eval(f(eval(s)))
+    }
+
+    forAll("a") { a: Free[List,Int] =>
+      assert(IO3.run(a) == eval(a))
+    }
+  }
+
 }
