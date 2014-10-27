@@ -30,36 +30,62 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   private def testProperty(test: Int => Unit) =
     forAll("n: Int") { n: Int => test(n) }
 
-  private def testMean[A: Numeric](rand: Rand[A], meanCheck: Double => Unit) = {
-    val NumIterations = 100000
+  private def testMean[A: Numeric](rand: Rand[A], meanCheck: Double => Unit, numIterations: Int = 100000) = {
     val ev = implicitly[Numeric[A]]
     val rng: RNG = Simple(42)
-    val (sumRNs, _) = (1 to NumIterations).foldLeft((0d, rng)) {
+    val (sumRNs, _) = (1 to numIterations).foldLeft((0d, rng)) {
       case ((sum1, rng1), _) => map(rand)(sum1 + ev.toDouble(_))(rng1)
     }
-    val meanRNs = sumRNs / NumIterations
+    val meanRNs = sumRNs / numIterations
     meanCheck(meanRNs)
+  }
+
+  private def testUniformDistribution[A: Numeric](rand: Rand[A], numIterations: Int = 100000) = {
+    import scala.collection.mutable.{Map => MMap}
+    val distribution = MMap[A,Int]()
+    def put(a: A) = {
+      val oldValue = distribution.getOrElse(a, 0)
+      distribution.put(a, oldValue + 1)
+    }
+    def setDistribution = {
+      val rng: RNG = Simple(42)
+      (1 to numIterations).foldLeft(rng) {
+        case (rng1, _) =>
+          val (a, rng2) = rand(rng1)
+          put(a)
+          rng2
+      }
+    }
+    setDistribution
+    // for nextInt 
+    assert(numIterations - distribution.size <= 2)
   }
 
   private def rangeCheck(mean: Double, delta: Double)(d: Double) =
     d should (be >= mean - delta and be <= mean + delta)
 
+  behavior of "6.0 nextInt"
+  private def nextInt(rng: RNG): (Int, RNG) = rng.nextInt
+  // Simple seems to be heavily biased towards positive Ints?!
+  ignore should "have a mean of 0" in testMean(nextInt, rangeCheck(0, 100))
+  it should "have a uniform distribution" in testUniformDistribution(nextInt)
+
   behavior of "6.1 nonNegativeInt"
 
-  def testNonNegativeInt(n: Int) = nonNegativeInt(TestRNG(n))._1 should be >= 0
-
-  it should "work for corner cases" in testCornerCases(testNonNegativeInt)
-  it should "return a value >= 0 for all nextInt values" in testProperty(testNonNegativeInt)
-  it should "have a mean of Int.MaxValue / 2" in {
+  private def testNonNegativeInt(n: Int) = nonNegativeInt(TestRNG(n))._1 should be >= 0
+  private val NarrowingFactor: Double = 10000d
+  private def nonNegativeIntNarrowed(rng: RNG): (Double, RNG) = {
     // narrow the range [0, Int.MaxValue] for less variance of mean value
-    val NarrowingFactor = 10000d
-    def nonNegativeIntNarrowed(rng: RNG): (Double, RNG) = {
 //      map(nonNegativeInt)(_ / NarrowingFactor)(rng)
       val (i, rng1) = nonNegativeInt(rng)
       (i / NarrowingFactor, rng1)
     }
+
+  it should "work for corner cases" in testCornerCases(testNonNegativeInt)
+  it should "return a value >= 0 for all nextInt values" in testProperty(testNonNegativeInt)
+  it should "have a mean of Int.MaxValue / 2" in
     testMean(nonNegativeIntNarrowed, rangeCheck(Int.MaxValue / (2 * NarrowingFactor), 100))
-  }
+  it should "have a uniform distribution" in testUniformDistribution(nonNegativeIntNarrowed)
 
   behavior of "6.2 double"
 
@@ -70,6 +96,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   it should "work for corner cases" in testCornerCases(testDouble)
   it should "return a value >= 0 and < 1 for all nextInt values" in testProperty(testDouble)
   it should "have a mean of 0.5" in testMean(double, rangeCheck(0.5, 0.01))
+  it should "have a uniform distribution" in testUniformDistribution(double)
 
   behavior of "6.3.1 intDouble"
 
@@ -79,8 +106,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   }
 
   it should "work for corner cases" in testCornerCases(testIntDouble)
-  it should "return a double value >= 0 and < 1 for all nextInt values" in
-    testProperty(testIntDouble)
+  it should "return a double value >= 0 and < 1 for all nextInt values" in testProperty(testIntDouble)
 
   behavior of "6.3.2 doubleInt"
 
@@ -89,13 +115,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testDoubleRange(d)
   }
 
-  it should "work for corner cases" in {
-    testCornerCases(testDoubleInt)
-  }
-
-  it should "return a double value >= 0 and < 1 for all nextInt values" in {
-    testProperty(testDoubleInt)
-  }
+  it should "work for corner cases" in testCornerCases(testDoubleInt)
+  it should "return a double value >= 0 and < 1 for all nextInt values" in testProperty(testDoubleInt)
 
   behavior of "6.3.3 double3"
 
@@ -135,13 +156,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
 
   def testDoubleViaMap(n: Int) = testDoubleRange(doubleViaMap(TestRNG(n))._1)
 
-  it should "work for corner cases" in {
-    testCornerCases(testDoubleViaMap)
-  }
-
-  it should "return a value >= 0 and < 1 for all nextInt values" in {
-    testProperty(testDoubleViaMap)
-  }
+  it should "work for corner cases" in testCornerCases(testDoubleViaMap)
+  it should "return a value >= 0 and < 1 for all nextInt values" in testProperty(testDoubleViaMap)
 
   behavior of "6.6 map2"
 
@@ -150,13 +166,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testDoubleRange(d)
   }
 
-  it should "work for corner cases" in {
-    testCornerCases(testMap2)
-  }
-
-  it should "return a value >= 0 and < 1 for all nextInt values" in {
-    testProperty(testMap2)
-  }
+  it should "work for corner cases" in testCornerCases(testMap2)
+  it should "return a value >= 0 and < 1 for all nextInt values" in testProperty(testMap2)
 
   behavior of "6.7 RNG.sequence"
 
@@ -185,13 +196,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testDoubleRange(d, 42)
   }
 
-  it should "work for corner cases" in {
-    testCornerCases(testFlatMap)
-  }
-
-  it should "return a value >= 42.0 and < 43.0 for all nextInt values" in {
-    testProperty(testFlatMap)
-  }
+  it should "work for corner cases" in testCornerCases(testFlatMap)
+  it should "return a value >= 42.0 and < 43.0 for all nextInt values" in testProperty(testFlatMap)
 
   behavior of "6.8.2 nonNegativeLessThan"
 
@@ -200,13 +206,9 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     i should (be >= 0 and be < 42)
   }
 
-  it should "work for corner cases" in {
-    testCornerCases(testNonNegativeLessThan)
-  }
-
-  it should "return a value >= 0 and < 42 for all nextInt values" in {
+  it should "work for corner cases" in testCornerCases(testNonNegativeLessThan)
+  it should "return a value >= 0 and < 42 for all nextInt values" in
     testProperty(testNonNegativeLessThan)
-  }
 
   behavior of "6.9.1 mapViaFlatMap"
 
@@ -215,13 +217,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testDoubleRange(d, 42)
   }
 
-  it should "work for corner cases" in {
-    testCornerCases(testMapViaFlatMap)
-  }
-
-  it should "return a value >= 0 and < 1 for all nextInt values" in {
-    testProperty(testMapViaFlatMap)
-  }
+  it should "work for corner cases" in testCornerCases(testMapViaFlatMap)
+  it should "return a value >= 0 and < 1 for all nextInt values" in testProperty(testMapViaFlatMap)
 
   behavior of "6.9.2 RNG.map2ViaFlatMap"
 
@@ -230,13 +227,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     testDoubleRange(d)
   }
 
-  it should "work for corner cases" in {
-    testCornerCases(testMap2ViaFlatMap)
-  }
-
-  it should "return a value >= 0 and < 1 for all nextInt values" in {
-    testProperty(testMap2ViaFlatMap)
-  }
+  it should "work for corner cases" in testCornerCases(testMap2ViaFlatMap)
+  it should "return a value >= 0 and < 1 for all nextInt values" in testProperty(testMap2ViaFlatMap)
 
   behavior of "6.10.1 State.unit"
 
@@ -244,9 +236,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     assertResult((n, 42))(State.unit(n).run(42))
   }
 
-  it should "always result in the value that was passed in" in {
-    testProperty(testStateUnit)
-  }
+  it should "always result in the value that was passed in" in testProperty(testStateUnit)
 
   behavior of "6.10.2 State.map"
 
@@ -258,13 +248,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     assertResult(n + 1)(s)
   }
 
-  it should "work" in {
-    assertResult((3, 42))(State.unit(1).map(_ + 2).run(42))
-  }
-
-  it should "always result in (n.toString,n+1)" in {
-    testProperty(testStateMap)
-  }
+  it should "work" in assertResult((3, 42))(State.unit(1).map(_ + 2).run(42))
+  it should "always result in (n.toString,n+1)" in testProperty(testStateMap)
 
   behavior of "6.10.2 State.map2"
 
@@ -274,9 +259,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     assertResult(n + 2)(s)
   }
 
-  it should "always result in (n*2,n+2)" in {
-    testProperty(testStateMap2)
-  }
+  it should "always result in (n*2,n+2)" in testProperty(testStateMap2)
 
   behavior of "6.10.4 State.flatMap"
 
@@ -286,10 +269,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     assertResult(n + 2)(s)
   }
 
-  it should "always result in (n,n+2)" in {
-    testProperty(testStateFlatMap)
-  }
-
+  it should "always result in (n,n+2)" in testProperty(testStateFlatMap)
   it should "make for-comprehension work" in {
     def testForComprehension(n: Int) = {
       val s1 = createState(n)
@@ -312,9 +292,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     assertResult(n + 2)(s)
   }
 
-  it should "always result in (List(n,n),n+2)" in {
-    testProperty(testStateSequence)
-  }
+  it should "always result in (List(n,n),n+2)" in testProperty(testStateSequence)
 
   behavior of "6.11 simulateMachine"
 
