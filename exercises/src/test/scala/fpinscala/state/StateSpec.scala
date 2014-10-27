@@ -40,15 +40,17 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
     meanCheck(meanRNs)
   }
 
-  private def testUniformDistribution[A: Numeric](rand: Rand[A], numIterations: Int = 100000) = {
-    import scala.collection.mutable.{Map => MMap}
-    val distribution = MMap[A,Int]()
+  private def testUniformDistribution[A: Numeric](rand: Rand[A],
+      rng: RNG = Simple(42), numIterations: Int = 100000) =
+  {
+    import scala.collection.mutable
+    // as we currently only use distribution.size a mutable.Set would do, too
+    val distribution = mutable.Map[A,Int]()
     def put(a: A) = {
       val oldValue = distribution.getOrElse(a, 0)
       distribution.put(a, oldValue + 1)
     }
     def setDistribution = {
-      val rng: RNG = Simple(42)
       (1 to numIterations).foldLeft(rng) {
         case (rng1, _) =>
           val (a, rng2) = rand(rng1)
@@ -57,14 +59,13 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
       }
     }
     setDistribution
-    // for nextInt 
     assert(numIterations - distribution.size <= 2)
   }
 
   private def rangeCheck(mean: Double, delta: Double)(d: Double) =
     d should (be >= mean - delta and be <= mean + delta)
 
-  behavior of "6.0 nextInt"
+  behavior of "6.0 Simple.nextInt"
   private def nextInt(rng: RNG): (Int, RNG) = rng.nextInt
   // Simple seems to be heavily biased towards positive Ints?!
   ignore should "have a mean of 0" in testMean(nextInt, rangeCheck(0, 100))
