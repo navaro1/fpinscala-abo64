@@ -57,6 +57,12 @@ class IOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  private def evalFreeList[A](free: Free[List, A]): List[A] = free match {
+    case Return(a) => List(a)
+    case Suspend(r) => r
+    case FlatMap(s: Free[List, A], f) => evalFreeList(s) flatMap (a => evalFreeList(f(a)))
+  }
+
   behavior of "13.3 run"
   it should "work" in {
     implicit val listMonad =
@@ -64,14 +70,29 @@ class IOSpec extends FlatSpec with PropertyChecks {
         override def unit[A](a: => A) = List(a)
         override def flatMap[A,B](as: List[A])(f: A => List[B]) = as flatMap f
       }
-    def eval[A](free: Free[List, A]): List[A] = free match {
-      case Return(a) => List(a)
-      case Suspend(r) => r
-      case FlatMap(s: Free[List, A], f) => eval(s) flatMap(a => eval(f(a)))
-    }
     forAll("a") { a: Free[List,Int] =>
-      assert(IO3.run(a) == eval(a))
+      assert(IO3.run(a) == evalFreeList(a))
     }
   }
 
+  behavior of "13.4.1 translate"
+  it should "work" in {
+    val optionToList = new (Option ~> List) {
+      override def apply[A](o: Option[A]) = o map(List(_)) getOrElse(List())
+    }
+    def optionToListFree[A](fo: Free[Option,A]): Free[List,A] = fo match {
+      case Return(a) => IO3.Return[List,A](a)
+      case Suspend(o) => Suspend[List,A](optionToList(o))
+      case FlatMap(s: Free[Option,A],f) => FlatMap[List,A,A](optionToListFree(s), (a:A) => optionToListFree(f(a)))
+    }
+    implicit val arbOptionListFree: Arbitrary[(Free[Option,Int], Free[List,Int])] = Arbitrary(for {
+      fo <- arbitrary[Free[Option,Int]]
+      fl = optionToListFree(fo)
+    } yield (fo,fl))
+    forAll("(fo,fl)") { pf: (Free[Option,Int], Free[List,Int]) =>
+      val (fo, fl) = pf
+      val translation = translate(fo)(optionToList)
+      assert(evalFreeList(translation) == evalFreeList(fl))
+    }
+  }
 }
