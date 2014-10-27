@@ -13,11 +13,6 @@ class IOSpec extends FlatSpec with PropertyChecks {
 
   implicit def arbFree[F[_], A](implicit aa: Arbitrary[A], afa: Arbitrary[F[A]]): Arbitrary[Free[F, A]] =
   {
-    val flatMapF = new Function1[Free[F, A], Function1[A, Free[F, A]]] {
-      var free: Free[F, A] = _
-      override def apply(free: Free[F, A]) = (a: A) => {this.free = free; println(s"$a => $free"); free}
-      override def toString = s"(a: A) => $free"
-    }
     val returnGen: Gen[Return[F,A]] = arbitrary[A] map(IO3.Return(_))
     val suspendGen: Gen[Suspend[F,A]] = arbitrary[F[A]] map(Suspend(_))
     def freeGen(depth: Int): Gen[Free[F,A]] =
