@@ -11,7 +11,15 @@ import org.scalacheck.Gen
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class IOSpec extends FlatSpec with PropertyChecks {
 
-  implicit def arbFree[F[_], A](implicit aa: Arbitrary[A], afa: Arbitrary[F[A]]): Arbitrary[Free[F, A]] = {
+  implicit def arbFree[F[_], A](implicit aa: Arbitrary[A], afa: Arbitrary[F[A]]/*,
+      flatMapF: Arbitrary[A => Free[F, A]]*/): Arbitrary[Free[F, A]] =
+  {
+//    val flatMapF = (free: Free[F, A]) => (a: A) => free
+    val flatMapF = new Function1[Free[F, A], Function1[A, Free[F, A]]] {
+      var free: Free[F, A] = _
+      override def apply(free: Free[F, A]) = (a: A) => {this.free = free; println(s"$a => $free"); free}
+      override def toString = s"(a: A) => $free"
+    }
     val returnGen: Gen[Return[F,A]] = arbitrary[A] map(IO3.Return(_))
     val suspendGen: Gen[Suspend[F,A]] = arbitrary[F[A]] map(Suspend(_))
     def freeGen(depth: Int): Gen[Free[F,A]] =
@@ -20,8 +28,7 @@ class IOSpec extends FlatSpec with PropertyChecks {
     def flatMapGen(depth: Int): Gen[FlatMap[F,A,A]] = {
       for {
         s <- freeGen(depth - 1)
-//        f <- freeGen(depth - 1) map((a:A) => _)
-        f = (a:A) => IO3.Return[F,A](a)
+        f <- freeGen(depth - 1) map((a:A) => _)
       } yield FlatMap(s, f)
     }
 
@@ -64,13 +71,11 @@ class IOSpec extends FlatSpec with PropertyChecks {
         override def unit[A](a: => A) = List(a)
         override def flatMap[A,B](as: List[A])(f: A => List[B]) = as flatMap f
       }
-
     def eval[A](free: Free[List, A]): List[A] = free match {
       case Return(a) => List(a)
       case Suspend(r) => r
-      case FlatMap(s: Free[List, A], f) => eval(s) //eval(f(eval(s)))
+      case FlatMap(s: Free[List, A], f) => eval(s) flatMap(a => eval(f(a)))
     }
-
     forAll("a") { a: Free[List,Int] =>
       assert(IO3.run(a) == eval(a))
     }
