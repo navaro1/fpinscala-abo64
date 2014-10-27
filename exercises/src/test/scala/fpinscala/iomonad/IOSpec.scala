@@ -11,10 +11,8 @@ import org.scalacheck.Gen
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class IOSpec extends FlatSpec with PropertyChecks {
 
-  implicit def arbFree[F[_], A](implicit aa: Arbitrary[A], afa: Arbitrary[F[A]]/*,
-      flatMapF: Arbitrary[A => Free[F, A]]*/): Arbitrary[Free[F, A]] =
+  implicit def arbFree[F[_], A](implicit aa: Arbitrary[A], afa: Arbitrary[F[A]]): Arbitrary[Free[F, A]] =
   {
-//    val flatMapF = (free: Free[F, A]) => (a: A) => free
     val flatMapF = new Function1[Free[F, A], Function1[A, Free[F, A]]] {
       var free: Free[F, A] = _
       override def apply(free: Free[F, A]) = (a: A) => {this.free = free; println(s"$a => $free"); free}
