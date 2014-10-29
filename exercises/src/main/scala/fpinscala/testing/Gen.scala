@@ -120,6 +120,10 @@ object Prop {
         }).toList.reduce(_ && _)
       prop.run(max,n,rng)
   }
+
+  def check(p: => Boolean): Prop = Prop { (_, _, _) =>
+    if (p) Passed else Falsified("()", 0)
+  }
 }
 
 object Gen {
