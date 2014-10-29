@@ -29,30 +29,29 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   override def beforeEach =
     rng = RNG.Simple(0)
 
-  behavior of "8.1 List.sum"
+  private val between0And100 = SCGen.chooseNum(0, 100) label "n"
+  private val intListGen = SCGen.listOf(between0And100) label "ints"
 
+  behavior of "8.1 List.sum"
   it should "obey some laws" in {
     val ints = SCGen.choose(0, 100)
     val intList = SCGen.listOf(ints)
     val prop =
       SCProp.forAll(intList) {l => l.sum == l.reverse.sum} &&
       SCProp.forAll(ints, ints) {(n, i) => List.fill(n)(i).sum == n * i}
-    prop.check
   }
 
   behavior of "8.2 List.max"
-
   it should "obey some laws" in {
     val ints = SCGen.choose(0, 100)
     val intList = SCGen.listOf1(ints)
     val prop =
       SCProp.forAll(intList) {l => l.max == l.reverse.max} &&
       SCProp.forAll(ints map(_ + 1), ints) {(n, i) => List.fill(n)(i).max == i}
-    prop.check
   }
 
-  behavior of "8.3 Prop0.&&"
 
+  behavior of "8.3 Prop0.&&"
   it should "work" in {
     def asProp0(b: Boolean): Prop0 = new Prop0 {override def check = b}
     def testAnd(check1: Boolean, check2: Boolean, expected: Boolean) =
@@ -69,7 +68,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.4 Gen.choose"
-
   it should "should stay within specified range" in {
     val startInts = SCGen.choose(-100, 100)
     forAll(startInts label "start") { start =>
@@ -82,7 +80,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.5.1 Gen.unit"
-
   it should "always return the same object" in {
     forAll("a") { a: Int =>
       assert(a == Gen.unit(a).get)
@@ -90,16 +87,12 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.5.2 Gen.boolean"
-
   it should "have an equal distribution" in {
     val trues = Seq.fill(100)(Gen.boolean.get).filter(x => x)
     assert((trues.size - 50).abs <= 10)
   }
 
   behavior of "8.5.3 Gen.listOfN"
-
-  val between0And100 = SCGen.chooseNum(0, 100) label "n"
-
   it should "generate a list of n elements" in {
     forAll(between0And100) { n =>
       assert(Gen.listOfN(n, Gen.unit(0)).get.size == n)
@@ -107,23 +100,20 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.6.1 Gen.map"
-
   it should "work" in {
     forAll("a") { a: Int =>
       assert(a.toString == Gen.unit(a).map(_.toString).get)
     }
   }
 
-  behavior of "8.6.2 Gen.flatMap"
-
+  behavior of "8.6.1 Gen.flatMap"
   it should "work" in {
     forAll("a") { a: Int =>
       assert(a == Gen.unit(a).flatMap(Gen.unit(_)).get)
     }
   }
 
-  behavior of "8.6.3 Gen.listOfN"
-
+  behavior of "8.6.2 Gen.listOfN"
   it should "work" in {
     forAll(between0And100) { n =>
       assert(List.fill(n)("X") == Gen.unit("X").listOfN(Gen.unit(n)).get)
@@ -131,7 +121,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.7 Gen.union"
-
   it should "have an equal distribution" in {
     val booleans = Gen.union(Gen.unit(true), Gen.unit(false))
     val trues = Seq.fill(100)(booleans.get).filter(x => x)
@@ -139,7 +128,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.8 Gen.weighted"
-
   it should "have the required distribution" in {
     forAll(between0And100) { n =>
       val booleans = Gen.weighted((Gen.unit(true), n), (Gen.unit(false), 100 - n))
@@ -149,7 +137,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.9.1 Prop.&&"
-
   it should "work" in {
     def asProp(b: Boolean, msg: String = "bollocks"): Prop =
       Prop((_,_) => if (b) Passed else Falsified(msg, 1))
@@ -167,7 +154,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.9.2 Prop.||"
-
   it should "work" in {
     def asProp(b: Boolean, msg: String = "bollocks"): Prop =
       Prop((_,_) => if (b) Passed else Falsified(msg, 1))
@@ -185,7 +171,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.10 Gen.unsized"
-
   it should "work" in {
     forAll(between0And100) { n =>
       assert("X" == Gen.unit("X").unsized.forSize(n).get)
@@ -203,7 +188,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.11.2 SGen.map"
-
   it should "work" in {
     forAll(between0And100) { n =>
       assert(n + 1 == unitSGen(n).map(_ + 1).get)
@@ -211,7 +195,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.11.3 SGen.flatMap"
-
   it should "work" in {
     forAll(between0And100) { n =>
       assert(n + 1 == unitSGen(n).flatMap(n => unitSGen(n + 1)).get)
@@ -219,7 +202,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.11.4 SGen.**"
-
   it should "work" in {
     forAll(between0And100) { n =>
       assert((n, n + 1) == (unitSGen(n) ** unitSGen(n + 1)).get)
@@ -227,7 +209,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.12 SGen.listOf"
-
   it should "work" in {
     forAll(between0And100) { n =>
       assert(List.fill(n)("X") == Gen.listOf(Gen.unit("X")).forSize(n).get)
@@ -235,7 +216,6 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   behavior of "8.13 SGen.listOf1"
-
   it should "work" in {
     forAll(between0And100) { n =>
       assert(List.fill(n max 1)("X") == Gen.listOf1(Gen.unit("X")).forSize(n).get)
