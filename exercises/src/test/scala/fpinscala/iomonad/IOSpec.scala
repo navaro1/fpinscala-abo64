@@ -7,6 +7,7 @@ import IO3._
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import java.io.ByteArrayInputStream
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class IOSpec extends FlatSpec with PropertyChecks {
@@ -93,6 +94,56 @@ class IOSpec extends FlatSpec with PropertyChecks {
       val (fo, fl) = pf
       val translation = translate(fo)(optionToList)
       assert(evalFreeList(translation) == evalFreeList(fl))
+    }
+  }
+
+  behavior of "13.4.2 runConsole"
+  it should "work" in {
+    type ConsoleResult = Option[String]
+    def toStringConsoleResult[String](any: Any): ConsoleResult = any match {
+      case () => None
+      case None => None
+      case Some(s) => Some(s.toString)
+      case s => Some(s.toString)
+    }
+    val inputLine = "Monty Python"
+    implicit val arbStr: Arbitrary[String] = Arbitrary(
+        Gen.oneOf("always", "look", "at", "the", "bright", "side", "of", "life"))
+    val readLineGen = Gen.const(ReadLine)
+    val printLineGen = arbitrary[String] map(PrintLine(_))
+    def genConsole[A] =
+      // is there a better way w/o asInstanceOf?
+      Gen.oneOf[Console[_]](readLineGen, printLineGen) map(_.asInstanceOf[Console[A]])
+    implicit def arbConsole[A]: Arbitrary[Console[A]] = Arbitrary(genConsole)
+//    implicit def arbFreeAnyRef: Free[Console,ConsoleResult] =
+//      Arbitrary {
+//    val optionToConsole = new (Option ~> Console) {
+//      override def apply[A](o: Option[_]) = o map(a => PrintLine(a.toString)) getOrElse(ReadLine)
+//    }
+//      def toConsoleResultFree(fo: Free[Option,String]): Free[Console,ConsoleResult] = fo match {
+//          case Return(a) => IO3.Return[Console, ConsoleResult](Some(a))
+//          case Suspend(o) => Suspend[Console, ConsoleResult](optionToConsole(o))
+//          case FlatMap(s: Free[Option, String], f) => FlatMap[Console, ConsoleResult](optionToConsole(s), (a: A) => optionToListFree(f(a)))
+//        }
+//      arbitrary[Free[Option,Boolean]] map(translate(_)(toConsoleResultFree))
+//    }
+    def eval[A](free: Free[Console, A]): ConsoleResult = free match {
+      case IO3.Return(a) => toStringConsoleResult(a)
+      case Suspend(ReadLine) => toStringConsoleResult(inputLine)
+      case Suspend(r) => toStringConsoleResult(r.toThunk())
+      case FlatMap(s: Free[Console, A],f) => eval(f(eval(s)))
+    }
+    val in = new ByteArrayInputStream((s"$inputLine\n" * 100).getBytes)
+    scala.Console.withIn(in) {
+//        println(s"evalResultX=${eval(IO3.FlatMap(IO3.Return(Some("side")), (_:Any) => Return("of")))}")
+      forAll("a") { a: Free[Console,ConsoleResult] =>
+        println(s"a=$a")
+        val result = runConsole(a)
+        println(s"result=$result")
+        val evalResult = eval(a)
+        println(s"evalResult=$evalResult")
+        assert(toStringConsoleResult(result) == evalResult)
+      }
     }
   }
 }

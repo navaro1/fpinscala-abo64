@@ -30,23 +30,23 @@ trait Prop1 { self =>
     }
 }
 
-case class Prop(run: (TestCases,RNG) => Result) {
-  def &&(p: Prop): Prop = Prop { (tc, rng) =>
-    run(tc, rng) match {
-      case Passed => p.run(tc, rng)
+case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
+  def &&(p: Prop): Prop = Prop { (max, tc, rng) =>
+    run(max, tc, rng) match {
+      case Passed => p.run(max, tc, rng)
       case falsified => falsified
     }
   }
 
-  def ||(p: Prop): Prop = Prop { (tc, rng) =>
-    run(tc, rng) match {
-      case Falsified(msg, _) => p.tag(msg).run(tc, rng)
+  def ||(p: Prop): Prop = Prop { (max, tc, rng) =>
+    run(max, tc, rng) match {
+      case Falsified(msg, _) => p.tag(msg).run(max, tc, rng)
       case x => x
     }
   }
 
-  def tag(msg: String) = Prop { (tc,rng) =>
-    run(tc, rng) match {
+  def tag(msg: String) = Prop { (max, tc, rng) =>
+    run(max, tc, rng) match {
       case Falsified(e, c) => Falsified(msg + "\n" + e, c)
       case x => x
     }
@@ -57,6 +57,7 @@ object Prop {
   type FailedCase = String
   type SuccessCount = Int
   type TestCases = Int
+  type MaxSize = Int
 
   sealed trait Result {
     def isFalsified: Boolean
@@ -68,23 +69,57 @@ object Prop {
     successes: SuccessCount) extends Result {
     def isFalsified = true
   }
+  case object Proved extends Result {
+    def isFalsified = false
+  }
 
   /* Produce an infinite random stream from a `Gen` and a starting `RNG`. */
   def randomStream[A](g: Gen[A])(rng: RNG): Stream[A] =
     Stream.unfold(rng)(rng => Some(g.sample.run(rng)))
 
   def forAll[A](as: Gen[A])(f: A => Boolean): Prop = Prop {
-    (n,rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map {
+    (max, n, rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map {
       case (a, i) => try {
         if (f(a)) Passed else Falsified(a.toString, i)
       } catch { case e: Exception => Falsified(buildMsg(a, e), i) }
     }.find(_.isFalsified).getOrElse(Passed)
   }
 
+  def run(p: Prop,
+          maxSize: Int = 100,
+          testCases: Int = 100,
+          rng: RNG = RNG.Simple(System.currentTimeMillis)): Unit =
+    p.run(maxSize, testCases, rng) match {
+      case Falsified(msg, n) =>
+        println(s"! Falsified after $n passed tests:\n $msg")
+      case Passed =>
+        println(s"+ OK, passed $testCases tests.")
+      case Proved =>
+        println(s"+ OK, proved property.")
+    }
+
   def buildMsg[A](s: A, e: Exception): String =
     s"test case: $s\n" +
     s"generated an exception: ${e.getMessage}\n" +
     s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
+
+  def apply(f: (TestCases,RNG) => Result): Prop =
+    Prop { (_,n,rng) => f(n,rng) }
+
+  def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
+    forAll(g(_))(f)
+
+  def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = Prop {
+    (max,n,rng) =>
+      val casesPerSize = (n - 1) / max + 1
+      val props: Stream[Prop] =
+        Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
+      val prop: Prop =
+        props.map(p => Prop { (max, n, rng) =>
+          p.run(max, casesPerSize, rng)
+        }).toList.reduce(_ && _)
+      prop.run(max,n,rng)
+  }
 }
 
 object Gen {
@@ -107,11 +142,13 @@ object Gen {
     Gen[Int](sample)
   }
 
-  def boolean: Gen[Boolean] =
-    Gen(State(RNG.boolean))
+  def boolean: Gen[Boolean] = Gen(State(RNG.boolean))
 
-  def double: Gen[Double] =
-    Gen(State(RNG.double))
+  def int: Gen[Int] = Gen(State(RNG.int))
+
+  def nonNegativeLessThan(n: Int): Gen[Int] = Gen(State(RNG.nonNegativeLessThan(n)))
+
+  def double: Gen[Double] = Gen(State(RNG.double))
 
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(g.sample)))

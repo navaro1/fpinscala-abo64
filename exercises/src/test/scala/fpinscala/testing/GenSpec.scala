@@ -23,7 +23,7 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   }
 
   implicit class TestPropOps(prop: Prop) {
-    def get: Result = prop.run(1, rng)
+    def get: Result = prop.run(1, 1, rng)
   }
 
   override def beforeEach =
@@ -220,5 +220,19 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
     forAll(between0And100) { n =>
       assert(List.fill(n max 1)("X") == Gen.listOf1(Gen.unit("X")).forSize(n).get)
     }
+  }
+
+  behavior of "8.14 Prop for List.sorted"
+  it should "work" in {
+    val intListGen = for {
+      n <- Gen.nonNegativeLessThan(10)
+      l <- Gen.listOfN(n, Gen.int)
+    } yield l
+    val listSortedProp: Prop =
+      Prop.forAll(intListGen) { l: List[Int] =>
+        l.sorted.size == l.size
+      }
+    val result = listSortedProp.run(10, 10, RNG.Simple(42))
+    assert(result == Passed)
   }
 }

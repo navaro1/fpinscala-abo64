@@ -14,9 +14,9 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
 
   import fpinscala.testing.Prop
   import Prop._
-  def runProp(prop: Prop, testCases: TestCases): Result = {
+  def runProp(prop: Prop, maxSize: Prop.MaxSize, testCases: TestCases): Result = {
     import fpinscala.state.RNG.Simple
-    prop.run(testCases, Simple(0))
+    prop.run(maxSize, testCases, Simple(0))
   }
 
   def testMonoidLaws(testCases: TestCases): Result = {
@@ -40,7 +40,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
       monoidLaws(booleanAnd, FPGen.boolean) &&
       monoidLaws(optionMonoid[Int], optionGen(intGen(10)))
 
-    runProp(monoidProps, testCases)
+    runProp(monoidProps, 10, testCases)
   }
 
   private def checkMonoidLaws[A](m: Monoid[A], gen: Gen[A],
@@ -171,7 +171,7 @@ class MonoidSpec extends FlatSpec with PropertyChecks {
     } yield Monoid.Part(lStub, words, rStub)
     val wcGen: Gen[Monoid.WC] = Gen.union(stubGen, partGen)
     val laws = Monoid.monoidLaws(Monoid.wcMonoid, wcGen)
-    assert(runProp(laws, 10) == Passed)
+    assert(runProp(laws, 10, 10) == Passed)
   }
 
   behavior of "10.11 countWords"
