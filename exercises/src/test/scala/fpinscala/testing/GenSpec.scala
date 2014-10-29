@@ -232,7 +232,7 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
 //      } yield l
     val listSortedProp: Prop =
       Prop.forAll(intListGen) { l: List[Int] =>
-        println(l)
+//        println(l)
         l.sorted.size == l.size
       }
     val result = listSortedProp.run(10, 10, RNG.Simple(42))
