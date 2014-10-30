@@ -126,6 +126,21 @@ object Prop {
   }
 }
 
+object ListSortedProp {
+  // Exercise 8.14: Prop for List.sorted
+    val intListGen: Gen[List[Int]] =
+      Gen.choose(-100,100).listOfN(Gen.choose(0,10))
+//      for {
+//        n <- Gen.nonNegativeLessThan(10)
+//        l <- Gen.listOfN(n, Gen.choose(-100,100))
+//      } yield l
+    val listSortedProp: Prop =
+      Prop.forAll(intListGen) { l: List[Int] =>
+//        println(l)
+        l.sorted.size == l.size
+      }
+}
+
 object Gen {
   def unit[A](a: => A): Gen[A] =
     Gen(State.unit(a))
