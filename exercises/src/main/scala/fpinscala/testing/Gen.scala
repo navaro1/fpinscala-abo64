@@ -126,7 +126,7 @@ object Prop {
   }
 }
 
-object ListSortedProp {
+object ListProps {
   // Exercise 8.14: Prop for List.sorted
     val intListGen: Gen[List[Int]] =
       Gen.choose(-100,100).listOfN(Gen.choose(0,10))
@@ -134,11 +134,23 @@ object ListSortedProp {
 //        n <- Gen.nonNegativeLessThan(10)
 //        l <- Gen.listOfN(n, Gen.choose(-100,100))
 //      } yield l
-    val listSortedProp: Prop =
+    val sortedProp: Prop =
       Prop.forAll(intListGen) { l: List[Int] =>
 //        println(l)
         l.sorted.size == l.size
       }
+
+  // Exercise 8.14: Prop for List.takeWhile
+    val takeWhileProp: Prop = {
+      val f = (_:Int) <= 0
+      val p1 = Prop.forAll(intListGen) { l: List[Int] =>
+        l.takeWhile(f).forall(f) == true
+      }
+      val p2: Prop = Prop.forAll(intListGen) { l: List[Int] =>
+        l.takeWhile(f) ++ l.dropWhile(f) == l
+      }
+      p1 && p2
+    }
 }
 
 object Gen {
