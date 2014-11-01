@@ -33,24 +33,45 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   private val between0And100 = SCGen.chooseNum(0, 100) label "n"
   private val intListGen = SCGen.listOf(between0And100) label "ints"
 
+//  behavior of "8.1 List.sum"
+//  it should "obey some laws" in {
+//    val ints = SCGen.choose(0, 100)
+//    val intList = SCGen.listOf(ints)
+//    val prop =
+//      SCProp.forAll(intList) {l => l.sum == l.reverse.sum} &&
+//      SCProp.forAll(ints, ints) {(n, i) => List.fill(n)(i).sum == n * i}
+//    prop.check
+//  }
+//
+//  behavior of "8.2 List.max"
+//  it should "obey some laws" in {
+//    val ints = SCGen.choose(0, 100)
+//    val intList = SCGen.listOf1(ints)
+//    val prop =
+//      SCProp.forAll(intList) {l => l.max == l.reverse.max} &&
+//      SCProp.forAll(ints map(_ + 1), ints) {(n, i) => List.fill(n)(i).max == i}
+//    prop.check
+//  }
+
   behavior of "8.1 List.sum"
   it should "obey some laws" in {
-    val ints = SCGen.choose(0, 100)
-    val intList = SCGen.listOf(ints)
-    val prop =
-      SCProp.forAll(intList) {l => l.sum == l.reverse.sum} &&
-      SCProp.forAll(ints, ints) {(n, i) => List.fill(n)(i).sum == n * i}
+      forAll(intListGen) { l =>
+        whenever(!l.isEmpty) { assert(l.sum == l.reverse.sum) }
+      }
+      forAll(between0And100, between0And100) { (n: Int, i: Int) =>
+        whenever(n > 0) { assert(List.fill(n)(i).sum == i * n) }
+      }
   }
 
   behavior of "8.2 List.max"
   it should "obey some laws" in {
-    val ints = SCGen.choose(0, 100)
-    val intList = SCGen.listOf1(ints)
-    val prop =
-      SCProp.forAll(intList) {l => l.max == l.reverse.max} &&
-      SCProp.forAll(ints map(_ + 1), ints) {(n, i) => List.fill(n)(i).max == i}
+      forAll(intListGen) { l =>
+        whenever(!l.isEmpty) { assert(l.max == l.reverse.max) }
+      }
+      forAll(between0And100, between0And100) { (n: Int, i: Int) =>
+        whenever(n > 0) { assert(List.fill(n)(i).max == i) }
+      }
   }
-
 
   behavior of "8.3 Prop0.&&"
   it should "work" in {
