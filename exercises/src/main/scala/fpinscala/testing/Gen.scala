@@ -202,6 +202,11 @@ object Gen {
 
   def listOf1[A](g: Gen[A]): SGen[List[A]] =
     SGen(n => g.listOfN(n max 1))
+
+  val parInt: Gen[Par[Int]] =
+    choose(-100,100).listOfN(choose(0,20)).map(l =>
+      l.foldLeft(Par.unit(0))((p, i) =>
+        Par.fork { Par.map2(p, Par.unit(i))(_ + _) }))
 }
 
 case class Gen[+A](sample: State[RNG,A]) {
