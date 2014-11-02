@@ -1,8 +1,7 @@
 package fpinscala.testing
 
 import org.junit.runner.RunWith
-import org.scalacheck.{Gen => SCGen}
-import org.scalacheck.{Prop => SCProp}
+import org.scalacheck.{Gen => SCGen, Prop => SCProp, Test => SCTest}
 import org.scalatest.FlatSpec
 import org.scalatest.prop.PropertyChecks
 import fpinscala.state.RNG
@@ -33,45 +32,50 @@ class GenSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   private val between0And100 = SCGen.chooseNum(0, 100) label "n"
   private val intListGen = SCGen.listOf(between0And100) label "ints"
 
-//  behavior of "8.1 List.sum"
-//  it should "obey some laws" in {
-//    val ints = SCGen.choose(0, 100)
-//    val intList = SCGen.listOf(ints)
-//    val prop =
-//      SCProp.forAll(intList) {l => l.sum == l.reverse.sum} &&
-//      SCProp.forAll(ints, ints) {(n, i) => List.fill(n)(i).sum == n * i}
-//    prop.check
-//  }
-//
-//  behavior of "8.2 List.max"
-//  it should "obey some laws" in {
-//    val ints = SCGen.choose(0, 100)
-//    val intList = SCGen.listOf1(ints)
-//    val prop =
-//      SCProp.forAll(intList) {l => l.max == l.reverse.max} &&
-//      SCProp.forAll(ints map(_ + 1), ints) {(n, i) => List.fill(n)(i).max == i}
-//    prop.check
-//  }
+  private def checkProp(prop: SCProp) = {
+    val result = SCTest.check(SCTest.Parameters.default, prop)
+    assert(result.passed)
+  }
 
   behavior of "8.1 List.sum"
   it should "obey some laws" in {
-      forAll(intListGen) { l =>
-        whenever(!l.isEmpty) { assert(l.sum == l.reverse.sum) }
-      }
-      forAll(between0And100, between0And100) { (n: Int, i: Int) =>
-        whenever(n > 0) { assert(List.fill(n)(i).sum == i * n) }
-      }
+    val ints = SCGen.choose(0, 100)
+    val intList = SCGen.listOf(ints)
+    val prop: SCProp =
+      SCProp.forAll(intList) { l: List[Int] => l.sum == l.reverse.sum} &&
+      SCProp.forAll(ints, ints) {(n, i) => List.fill(n)(i).sum == n * i}
+    checkProp(prop)
   }
 
   behavior of "8.2 List.max"
   it should "obey some laws" in {
-      forAll(intListGen) { l =>
-        whenever(!l.isEmpty) { assert(l.max == l.reverse.max) }
-      }
-      forAll(between0And100, between0And100) { (n: Int, i: Int) =>
-        whenever(n > 0) { assert(List.fill(n)(i).max == i) }
-      }
+    val ints = SCGen.choose(0, 100)
+    val intList = SCGen.listOf1(ints)
+    val prop: SCProp =
+      SCProp.forAll(intList) { l: List[Int] => l.max == l.reverse.max} &&
+      SCProp.forAll(ints map(_ + 1), ints) {(n, i) => List.fill(n)(i).max == i}
+    checkProp(prop)
   }
+
+//  behavior of "8.1 List.sum"
+//  it should "obey some laws" in {
+//      forAll(intListGen) { l =>
+//        whenever(!l.isEmpty) { assert(l.sum == l.reverse.sum) }
+//      }
+//      forAll(between0And100, between0And100) { (n: Int, i: Int) =>
+//        whenever(n > 0) { assert(List.fill(n)(i).sum == i * n) }
+//      }
+//  }
+//
+//  behavior of "8.2 List.max"
+//  it should "obey some laws" in {
+//      forAll(intListGen) { l =>
+//        whenever(!l.isEmpty) { assert(l.max == l.reverse.max) }
+//      }
+//      forAll(between0And100, between0And100) { (n: Int, i: Int) =>
+//        whenever(n > 0) { assert(List.fill(n)(i).max == i) }
+//      }
+//  }
 
   behavior of "8.3 Prop0.&&"
   it should "work" in {
