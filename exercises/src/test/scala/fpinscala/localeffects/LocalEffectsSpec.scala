@@ -11,14 +11,14 @@ class LocalEffectsSpec extends FlatSpec with PropertyChecks {
   it should "work" in {
     forAll("ints") { ints: List[Int] =>
       val intMap = ints.zipWithIndex.map {case (a,i) => (i,a)}.toMap
-      val x  = new RunnableST[List[Int]] {
+      val runnableST  = new RunnableST[List[Int]] {
         override def apply[S] = for {
           array <- STArray[S, Int](ints.size, 0)
           _ <- array.fill(intMap)
           l <- array.freeze
         } yield l
       }
-      val result = ST.runST(x)
+      val result = ST.runST(runnableST)
       assert(result == ints)
     }
   }
