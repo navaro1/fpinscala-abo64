@@ -15,8 +15,8 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
   it should "work" in {
     forAll("l") { l: List[Int] =>
       forAll (between0AndN(l.size)) { n: Int =>
-        val result = SSTProcess.take(n)(l.toStream).toList
-        assert(result == l.take(n))
+        val result = SSTProcess.take(n)(l.toStream)
+        assert(result.toList == l.take(n))
       }
     }
   }
@@ -25,8 +25,8 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
   it should "work" in {
     forAll("l") { l: List[Int] =>
       forAll (between0AndN(l.size)) { n: Int =>
-        val result = SSTProcess.drop(n)(l.toStream).toList
-        assert(result == l.drop(n))
+        val result = SSTProcess.drop(n)(l.toStream)
+        assert(result.toList == l.drop(n))
       }
     }
   }
@@ -36,24 +36,24 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
   behavior of "15.1.3 Process.takeWhile"
   it should "work" in {
     forAll("l") { l: List[Int] =>
-      val result = SSTProcess.takeWhile(even)(l.toStream).toList
-      assert(result == l.takeWhile(even))
+      val result = SSTProcess.takeWhile(even)(l.toStream)
+      assert(result.toList == l.takeWhile(even))
     }
   }
 
   behavior of "15.1.4 Process.dropWhile"
   it should "work" in {
     forAll("l") { l: List[Int] =>
-      val result = SSTProcess.dropWhile(even)(l.toStream).toList
-      assert(result == l.dropWhile(even))
+      val result = SSTProcess.dropWhile(even)(l.toStream)
+      assert(result.toList == l.dropWhile(even))
     }
   }
 
   behavior of "15.2 Process.count"
   it should "work" in {
     forAll("l") { l: List[Int] =>
-      val result = SSTProcess.count(l.toStream).toList
-      assert(result == l.zipWithIndex.map(_._2 + 1))
+      val result = SSTProcess.count(l.toStream)
+      assert(result.toList == l.zipWithIndex.map(_._2 + 1))
     }
   }
 }
