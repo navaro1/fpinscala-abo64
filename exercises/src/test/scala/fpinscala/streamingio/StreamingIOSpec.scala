@@ -30,4 +30,15 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
       }
     }
   }
+
+  private def even(i: Int) = (i % 2) == 0
+
+  behavior of "15.1.3 Process.takeWhile"
+  it should "work" in {
+    forAll("l") { l: List[Int] =>
+      val result = SSTProcess.takeWhile(even)(l.toStream).toList
+      assert(result == l.takeWhile(even))
+    }
+  }
+
 }
