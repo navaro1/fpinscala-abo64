@@ -41,4 +41,11 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "15.1.4 Process.dropWhile"
+  it should "work" in {
+    forAll("l") { l: List[Int] =>
+      val result = SSTProcess.dropWhile(even)(l.toStream).toList
+      assert(result == l.dropWhile(even))
+    }
+  }
 }
