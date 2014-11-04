@@ -313,7 +313,9 @@ object SimpleStreamTransducers {
     /*
      * Exercise 2: Implement `count`.
      */
-    def count[I]: Process[I,Int] = ???
+    def count[I]: Process[I,Int] =
+      count2
+//      lift((i: I) => 1.0) |> sum |> lift(_.toInt)
 
     /* For comparison, here is an explicit recursive implementation. */
     def count2[I]: Process[I,Int] = {

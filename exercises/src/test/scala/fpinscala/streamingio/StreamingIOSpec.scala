@@ -48,4 +48,12 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
       assert(result == l.dropWhile(even))
     }
   }
+
+  behavior of "15.2 Process.count"
+  it should "work" in {
+    forAll("l") { l: List[Int] =>
+      val result = SSTProcess.count(l.toStream).toList
+      assert(result == l.zipWithIndex.map(_._2 + 1))
+    }
+  }
 }
