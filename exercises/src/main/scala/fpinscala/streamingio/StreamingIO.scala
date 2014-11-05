@@ -329,10 +329,11 @@ object SimpleStreamTransducers {
      */
     def mean: Process[Double,Double] = {
       def go(sum: Double, nth: Int): Process[Double, Double] =
-        Await {
-          case Some(d) => Emit((sum + d) / (nth + 1), go(sum + d, nth + 1))
-          case None => Halt()
-        }
+        await((d: Double) => emit((sum+d) / (nth+1), go(sum+d, nth+1)))
+//        Await {
+//          case Some(d) => Emit((sum + d) / (nth + 1), go(sum + d, nth + 1))
+//          case None => Halt()
+//        }
       go(0.0, 0)
     }
 
