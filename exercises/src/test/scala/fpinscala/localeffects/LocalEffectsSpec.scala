@@ -2,6 +2,7 @@ package fpinscala.localeffects
 
 import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
+import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalacheck.Gen
 
