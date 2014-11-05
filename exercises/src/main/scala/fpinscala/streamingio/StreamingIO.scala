@@ -344,9 +344,11 @@ object SimpleStreamTransducers {
 
     /* Exercise 4: Implement `sum` and `count` in terms of `loop` */
 
-    def sum2: Process[Double,Double] = ???
+    def sumViaLoop: Process[Double,Double] =
+      loop(0d) {(d,s) => (d + s, d + s)}
 
-    def count3[I]: Process[I,Int] = ???
+    def countViaLoop[I]: Process[I,Int] =
+      loop(0) {(_,s) => (s + 1, s + 1)}
 
     /*
      * Exercise 7: Can you think of a generic combinator that would
