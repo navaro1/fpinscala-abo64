@@ -327,7 +327,14 @@ object SimpleStreamTransducers {
     /*
      * Exercise 3: Implement `mean`.
      */
-    def mean: Process[Double,Double] = ???
+    def mean: Process[Double,Double] = {
+      def go(sum: Double, nth: Int): Process[Double, Double] =
+        Await {
+          case Some(d) => Emit((sum + d) / (nth + 1), go(sum + d, nth + 1))
+          case None => Halt()
+        }
+      go(0.0, 0)
+    }
 
     def loop[S,I,O](z: S)(f: (I,S) => (O,S)): Process[I,O] =
       await((i: I) => f(i,z) match {
