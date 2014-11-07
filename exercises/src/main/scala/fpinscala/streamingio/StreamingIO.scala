@@ -377,6 +377,10 @@ object SimpleStreamTransducers {
      *
      * See definition on `Process` above.
      */
+    def zipWithIndex[I,O](p: Process[I,O]): Process[I,(O,Int)] = {
+      def indexProcess: Process[O,(O,Int)] = loop(-1) {(o,s) => ((o,s + 1), s + 1)}
+      p |> indexProcess
+    }
 
     /*
      * Exercise 8: Implement `exists`
