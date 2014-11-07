@@ -57,15 +57,16 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  private def listOfMeans(doubles: List[Double]) = {
+    val (reversedMeans, _, _) = doubles.foldLeft((List[Double](), 0d, 0)) {
+      case ((means, sum, index), d) =>
+        (((sum + d) / (index + 1)) :: means, (sum + d), index + 1)
+    }
+    reversedMeans.reverse
+  }
+
   behavior of "15.3 Process.mean"
   it should "work" in {
-    def listOfMeans(doubles: List[Double]) = {
-      val (reversedMeans, _, _) = doubles.foldLeft((List[Double](), 0d, 0)) {
-        case ((means, sum, index), d) =>
-          (((sum + d) / (index + 1)) :: means, (sum + d), index + 1)
-      }
-      reversedMeans.reverse
-    }
     forAll("l") { l: List[Int] =>
       val doubles = l.map(_.toDouble)
       val result = SSTProcess.mean(doubles.toStream)
@@ -128,6 +129,15 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     forAll("l") { l: List[Int] =>
       val result = SSTProcess.zip(SSTProcess.id[Int], plus1Process)(l.toStream)
       assert(result.toList == l.zip(l map plus1))
+    }
+  }
+
+  behavior of "15.7.2 Process.meanViaZip"
+  it should "work" in {
+    forAll("l") { l: List[Int] =>
+      val doubles = l.map(_.toDouble)
+      val result = SSTProcess.meanViaZip(doubles.toStream)
+      assert(result.toList == listOfMeans(doubles))
     }
   }
 
