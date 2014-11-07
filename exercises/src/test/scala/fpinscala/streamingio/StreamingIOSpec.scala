@@ -96,4 +96,14 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "15.5 Process.|>"
+  it should "work" in {
+    val evenProcess = SSTProcess.filter(even)
+    val toStringProcess = SSTProcess.lift((_:Int).toString)
+    val pipe = evenProcess |> toStringProcess
+    forAll("l") { l: List[Int] =>
+      val result = pipe(l.toStream)
+      assert(result.toList == l.filter(even).map(_.toString))
+    }
+  }
 }
