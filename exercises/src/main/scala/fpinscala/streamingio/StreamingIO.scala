@@ -408,7 +408,13 @@ object SimpleStreamTransducers {
      * We choose to emit all intermediate values, and not halt.
      * See `existsResult` below for a trimmed version.
      */
-    def exists[I](f: I => Boolean): Process[I,Boolean] = ???
+    def exists[I](f: I => Boolean): Process[I,Boolean] =
+      lift(f) |> any
+
+    /* Emits whether a `true` input has ever been received. */
+    def any: Process[Boolean,Boolean] =
+      loop(false)((b:Boolean,s) => (s || b, s || b))
+
 
     /* Awaits then emits a single value, then halts. */
     def echo[I]: Process[I,I] = await(i => emit(i))

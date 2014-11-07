@@ -141,4 +141,17 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "15.8 Process.exists"
+  it should "work" in {
+    val isZero = (_:Int) == 0
+    def existsResult(l: List[Int]): List[Boolean] =
+      l.foldLeft((List[Boolean](),false)) { case ((lb,foundZero), i) =>
+        ((foundZero || isZero(i))::lb, foundZero || isZero(i))
+      }._1.reverse
+    forAll("l") { l: List[Int] =>
+      val result = SSTProcess.exists(isZero)(l.toStream)
+      assert(result.toList == existsResult(l))
+    }
+  }
+
 }
