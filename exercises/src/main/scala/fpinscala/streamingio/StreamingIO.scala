@@ -378,9 +378,20 @@ object SimpleStreamTransducers {
      * See definition on `Process` above.
      */
     def zipWithIndex[I,O](p: Process[I,O]): Process[I,(O,Int)] = {
-      def indexProcess: Process[O,(O,Int)] = loop(-1) {(o,s) => ((o,s + 1), s + 1)}
+      def indexProcess: Process[O,(O,Int)] = loop(0) {(o,s) => ((o,s), s + 1)}
       p |> indexProcess
     }
+
+    def zip[A,B,C](p1: Process[A,B], p2: Process[A,C]): Process[A,(B,C)] =
+      (p1, p2) match {
+        case (Halt(), _) => Halt()
+        case (_, Halt()) => Halt()
+        case (Emit(b, t1), Emit(c, t2)) => Emit((b,c), zip(t1, t2))
+        case (Await(recv1), _) =>
+          Await((oa: Option[A]) => zip(recv1(oa), feed(oa)(p2)))
+        case (_, Await(recv2)) =>
+          Await((oa: Option[A]) => zip(feed(oa)(p1), recv2(oa)))
+      }
 
     /*
      * Exercise 8: Implement `exists`

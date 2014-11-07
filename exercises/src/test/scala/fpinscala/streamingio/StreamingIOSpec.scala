@@ -115,4 +115,14 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  behavior of "15.7.1 Process.zip"
+  it should "work" in {
+    val plus1 = (_:Int) + 1
+    val plus1Process = SSTProcess.lift(plus1)
+    forAll("l") { l: List[Int] =>
+      val result = SSTProcess.zip(SSTProcess.id[Int], plus1Process)(l.toStream)
+      assert(result.toList == l.zip(l map plus1))
+    }
+  }
+
 }
