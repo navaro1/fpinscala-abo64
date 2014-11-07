@@ -203,10 +203,15 @@ object SimpleStreamTransducers {
     def filter(f: O => Boolean): Process[I,O] =
       this |> Process.filter(f)
 
+    def zip[O2](p: Process[I,O2]): Process[I,(O,O2)] =
+      Process.zip(this, p)
+
     /*
      * Exercise 6: Implement `zipWithIndex`.
      */
-    def zipWithIndex: Process[I,(O,Int)] = ???
+    def zipWithIndex: Process[I,(O,Int)] =
+      this zip (count map (_ - 1))
+//      Process.zipWithIndex(this)
 
     /* Add `p` to the fallback branch of this process */
     def orElse(p: Process[I,O]): Process[I,O] = this match {
@@ -378,8 +383,8 @@ object SimpleStreamTransducers {
      * See definition on `Process` above.
      */
     def zipWithIndex[I,O](p: Process[I,O]): Process[I,(O,Int)] = {
-      def indexProcess: Process[O,(O,Int)] = loop(0) {(o,s) => ((o,s), s + 1)}
-      p |> indexProcess
+      def pairWithIndex: Process[O,(O,Int)] = loop(0) {(o,s) => ((o,s), s + 1)}
+      p |> pairWithIndex
     }
 
     def zip[A,B,C](p1: Process[A,B], p2: Process[A,C]): Process[A,(B,C)] =

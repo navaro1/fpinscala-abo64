@@ -108,9 +108,15 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
   }
 
   behavior of "15.6 Process.zipWithIndex"
-  it should "work" in {
+  it should "work in object Process" in {
     forAll("l") { l: List[Int] =>
       val result = SSTProcess.zipWithIndex(SSTProcess.id[Int])(l.toStream)
+      assert(result.toList == l.zipWithIndex)
+    }
+  }
+  it should "work in trait Process" in {
+    forAll("l") { l: List[Int] =>
+      val result = SSTProcess.id[Int].zipWithIndex(l.toStream)
       assert(result.toList == l.zipWithIndex)
     }
   }
