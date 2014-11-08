@@ -447,6 +447,12 @@ object SimpleStreamTransducers {
      * Exercise 9: Write a program that reads degrees fahrenheit as `Double` values from a file,
      * converts each temperature to celsius, and writes results to another file.
      */
+    def convertFahrenheit: Process[String,String] =
+      filter((line: String) => !line.startsWith("#")) |>
+      filter((line: String) => !line.trim.isEmpty) |>
+      lift((line: String) => line.trim.toDouble) |>
+      lift(toCelsius) |>
+      lift(_.toString)
 
     def toCelsius(fahrenheit: Double): Double =
       (5.0 / 9.0) * (fahrenheit - 32.0)
