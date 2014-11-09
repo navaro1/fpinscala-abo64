@@ -181,8 +181,9 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  import Process._
+
   private def listTaskProcess(ls: => List[Int]): Process[Task, Int] = {
-    import Process._
     await(Task.unit(ls)) {
       case Left(e) => Halt(e)
       case Right(l) =>
@@ -193,28 +194,51 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
+  private def withExecutionService[A](block: ExecutorService => A) {
+    val es = Executors.newCachedThreadPool
+    try block(es) finally es.shutdown
+  }
+
   behavior of "15.10 Process.runLog"
   it should "work for normal cases" in {
-    implicit val es = Executors.newCachedThreadPool
-    try {
+    withExecutionService { implicit es: ExecutorService =>
       forAll("l") { l: List[Int] =>
-        val p = listTaskProcess(l)
-        val task = p.runLog
+        val p: Process[Task,Int] = listTaskProcess(l)
+        val task: Task[IndexedSeq[Int]] = p.runLog
         val Right(result) = task.attemptRun
         assert(result.toList == l)
       }
-    } finally es.shutdown
+    }
   }
 
   it should "work for Exceptions" in {
     val exception = new Exception("oops")
     lazy val l: List[Int] = List(1, 2, throw exception, 4)
-    implicit val es = Executors.newCachedThreadPool
-    try {
+    withExecutionService { implicit es: ExecutorService =>
         val p = listTaskProcess(l)
         val task = p.runLog
         val Left(e) = task.attemptRun
         assert(e == exception)
-    } finally es.shutdown
+    }
+  }
+
+  private implicit def optionCatch = new MonadCatch[Option] {
+    def unit[A](a: => A): Option[A] = Some(a)
+    def flatMap[A,B](a: Option[A])(f: A => Option[B]): Option[B] = a flatMap f
+    def attempt[A](oa: Option[A]): Option[Either[Throwable,A]] = oa match {
+      case Some(a) => Some(Right(a))
+      case _ => None
+    }
+    def fail[A](err: Throwable): Option[A] = None
+  }
+
+  behavior of "15.11.1 Process.eval"
+  it should "work" in {
+    forAll("oi") { oi: Option[Int] =>
+      val p: Process[Option,Int] = eval(oi)
+      val result: Option[IndexedSeq[Int]] = p.runLog
+      val or: Option[Int] = result map {_(0)}
+      assert(or == oi)
+    }
   }
 }
