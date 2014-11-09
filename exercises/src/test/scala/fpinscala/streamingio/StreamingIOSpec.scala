@@ -241,4 +241,13 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
       assert(or == oi)
     }
   }
+
+  behavior of "15.11.2 Process.eval_"
+  it should "work" in {
+    forAll("oi") { oi: Option[Int] =>
+      val p: Process[Option,String] = eval_(oi)
+      val result: Option[IndexedSeq[String]] = p.runLog
+      assert(result == oi.map(_ => IndexedSeq()))
+    }
+  }
 }
