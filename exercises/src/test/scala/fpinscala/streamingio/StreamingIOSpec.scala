@@ -181,26 +181,40 @@ class StreamingIOSpec extends FlatSpec with PropertyChecks {
     }
   }
 
-  behavior of "15.10 Process.runLog"
-  it should "work" in {
+  private def listTaskProcess(ls: => List[Int]): Process[Task, Int] = {
     import Process._
-    def listProcess(ls: List[Int]): Process[Task, Int] =
-      await(Task.unit(ls)) {
-        case Left(e) => Halt(e)
-        case Right(l) =>
-          lazy val next: Process[Task, Int] =
-            if (l.isEmpty) Halt(End)
-            else emit(l.head, listProcess(ls.tail))
-          next
-      }
+    await(Task.unit(ls)) {
+      case Left(e) => Halt(e)
+      case Right(l) =>
+        lazy val next: Process[Task, Int] =
+          if (l.isEmpty) Halt(End)
+          else emit(l.head, listTaskProcess(ls.tail))
+        next
+    }
+  }
+
+  behavior of "15.10 Process.runLog"
+  it should "work for normal cases" in {
     implicit val es = Executors.newCachedThreadPool
     try {
       forAll("l") { l: List[Int] =>
-        val p = listProcess(l)
+        val p = listTaskProcess(l)
         val task = p.runLog
         val Right(result) = task.attemptRun
         assert(result.toList == l)
       }
+    } finally es.shutdown
+  }
+
+  it should "work for Exceptions" in {
+    val exception = new Exception("oops")
+    lazy val l: List[Int] = List(1, 2, throw exception, 4)
+    implicit val es = Executors.newCachedThreadPool
+    try {
+        val p = listTaskProcess(l)
+        val task = p.runLog
+        val Left(e) = task.attemptRun
+        assert(e == exception)
     } finally es.shutdown
   }
 }
