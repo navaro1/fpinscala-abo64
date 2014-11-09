@@ -567,7 +567,16 @@ object GeneralizedStreamTransducers {
      * below, this is not tail recursive and responsibility for stack safety
      * is placed on the `Monad` instance.
      */
-    def runLog(implicit F: MonadCatch[F]): F[IndexedSeq[O]] = ???
+    def runLog(implicit F: MonadCatch[F]): F[IndexedSeq[O]] = {
+      def go(cur: Process[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] =
+        cur match {
+          case Emit(h,t) => go(t, acc :+ h)
+          case Halt(End) => F.unit(acc)
+          case Halt(err) => F.fail(err)
+          case Await(req,recv) => F.flatMap (F.attempt(req)) { e => go(Try(recv(e)), acc) }
+        }
+      go(this, IndexedSeq())
+    }
 
     /*
      * We define `Process1` as a type alias - see the companion object
@@ -981,7 +990,7 @@ object GeneralizedStreamTransducers {
 
     import fpinscala.iomonad.IO0.fahrenheitToCelsius
 
-    val converter: Process[IO,Unit] =
+    lazy val converter: Process[IO,Unit] =
       lines("fahrenheit.txt").
       filter(line => !line.startsWith("#") && !line.trim.isEmpty).
       map(line => fahrenheitToCelsius(line.toDouble).toString).
@@ -1041,7 +1050,7 @@ object GeneralizedStreamTransducers {
      * it promptly.
      */
 
-    val convertAll: Process[IO,Unit] = (for {
+    lazy val convertAll: Process[IO,Unit] = (for {
       out <- fileW("celsius.txt").once
       file <- lines("fahrenheits.txt")
       _ <- lines(file).
@@ -1053,7 +1062,7 @@ object GeneralizedStreamTransducers {
      * Just by switching the order of the `flatMap` calls, we can output
      * to multiple files.
      */
-    val convertMultisink: Process[IO,Unit] = (for {
+    lazy val convertMultisink: Process[IO,Unit] = (for {
       file <- lines("fahrenheits.txt")
       _ <- lines(file).
            map(line => fahrenheitToCelsius(line.toDouble)).
@@ -1065,7 +1074,7 @@ object GeneralizedStreamTransducers {
      * We can attach filters or other transformations at any point in the
      * program, for example:
      */
-    val convertMultisink2: Process[IO,Unit] = (for {
+    lazy val convertMultisink2: Process[IO,Unit] = (for {
       file <- lines("fahrenheits.txt")
       _ <- lines(file).
            filter(!_.startsWith("#")).
