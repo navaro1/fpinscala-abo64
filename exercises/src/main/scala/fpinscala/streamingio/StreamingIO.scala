@@ -398,7 +398,7 @@ object SimpleStreamTransducers {
           Await((oa: Option[A]) => zip(feed(oa)(p1), recv2(oa)))
       }
 
-    def meanViaZip =
+    def meanViaZip: Process[Double,Double] =
       (sum zip count) |> lift { case (s,n) => s / n }
 //      sum.zipWithIndex map { case (s,n) => s / (n + 1) }
 
