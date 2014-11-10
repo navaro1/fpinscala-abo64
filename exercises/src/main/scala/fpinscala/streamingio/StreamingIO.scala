@@ -767,7 +767,7 @@ object GeneralizedStreamTransducers {
      */
 
     import java.io.{BufferedReader,FileReader}
-    val p: Process[IO, String] =
+    lazy val p: Process[IO, String] =
       await(IO(new BufferedReader(new FileReader("lines.txt")))) {
         case Right(b) =>
           lazy val next: Process[IO,String] = await(IO(b.readLine)) {
