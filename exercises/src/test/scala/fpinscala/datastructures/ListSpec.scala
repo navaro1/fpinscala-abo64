@@ -1,6 +1,6 @@
 package fpinscala.datastructures
 
-import scala.{List => SList}
+import scala.{ List => SList }
 import org.junit.runner.RunWith
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
@@ -18,12 +18,12 @@ class ListSpec extends FlatSpec with PropertyChecks {
   }
 
   private implicit def arbList[T](implicit ev: Arbitrary[Seq[T]]): Arbitrary[List[T]] =
-//    Arbitrary(arbitrary[Seq[T]] map (List(_: _*)))
+    //    Arbitrary(arbitrary[Seq[T]] map (List(_: _*)))
     Arbitrary(for {
       as <- arbitrary[Seq[T]]
     } yield List(as: _*))
 
-  private def arbListTuple[T](implicit ev: Arbitrary[SList[T]]): Arbitrary[(List[T],SList[T])] =
+  private def arbListTuple[T](implicit ev: Arbitrary[SList[T]]): Arbitrary[(List[T], SList[T])] =
     Arbitrary(for {
       as <- arbitrary[SList[T]]
     } yield (List(as: _*), as))
@@ -32,6 +32,10 @@ class ListSpec extends FlatSpec with PropertyChecks {
 
   behavior of "3.2 tail"
 
+  it should "give the tail of a non-empty List" in {
+    assert(tail(List(1, 2, 3)) == List(2, 3))
+  }
+
   it should "throw a RuntimeException when passed an empty List" in {
     intercept[RuntimeException] {
       tail(Nil)
@@ -39,15 +43,18 @@ class ListSpec extends FlatSpec with PropertyChecks {
   }
 
   it should "work" in {
-    def testTail[A,B](as: List[A], expected: B) = assertResult(expected)(tail(as))
+    def testTail[A, B](as: List[A], expected: B) = assert(tail(as) == expected)
 
     val tests = Table(
-      ("as", "tail(as)"),
-      (List(0), Nil),
-      (List(0, 1), List(1)),
-      (List("a"), Nil),
-      (List("a", "b"), List("b")))
-    forAll(tests)(testTail)
+      ("as",         "tail(as)"   ),
+      (List(0),        Nil        ),
+      (List(0, 1),     List(1)    ),
+      (List("a"),      Nil        ),
+      (List("a", "b"), List("b")  ))
+    forAll(tests) { (as, expected) =>
+      assert(tail(as) == expected)
+    }
+//    forAll(tests)(testTail)
   }
 
   it should "for all as: List[Int] ==> Cons(head(as), tail(as)) == as" in {
@@ -67,10 +74,11 @@ class ListSpec extends FlatSpec with PropertyChecks {
   }
 
   it should "be equivalent to Scala List function" in {
-    forAll(arbListTuple[Int].arbitrary) { case (l, sl) =>
-      whenever(!sl.isEmpty) {
-        assertResult(toList(sl.tail))(tail(l))
-      }
+    forAll(arbListTuple[Int].arbitrary) {
+      case (l: List[Int], sl: SList[Int]) =>
+        whenever(!sl.isEmpty) {
+          assertResult(toList(sl.tail))(tail(l))
+        }
     }
   }
 
@@ -132,8 +140,8 @@ class ListSpec extends FlatSpec with PropertyChecks {
   it should "work" in {
     def testDrop[A](as: List[A], n: Int, expected: List[A]) =
       assertResult(expected)(drop(as, n))
-    val l123 = List(1,2,3)
-    val labc = List("a","b","c")
+    val l123 = List(1, 2, 3)
+    val labc = List("a", "b", "c")
 
     val tests = Table(
       ("l", "n", "drop(l, n)"),
@@ -143,12 +151,12 @@ class ListSpec extends FlatSpec with PropertyChecks {
       (l123, Int.MinValue, l123),
       (l123, -1, l123),
       (l123, 0, l123),
-      (l123, 1, List(2,3)),
+      (l123, 1, List(2, 3)),
       (l123, 2, List(3)),
       (l123, 3, Nil),
       (l123, Int.MaxValue, Nil),
 
-      (labc, 1, List("b","c")),
+      (labc, 1, List("b", "c")),
       (labc, 2, List("c")),
       (labc, 3, Nil))
     forAll(tests)(testDrop)
@@ -157,7 +165,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
   it should "for all l: List[Int] ==> length(drop(l, n)) == length(l) - n" in {
     forAll("l") { l: List[Int] =>
       val len = length(l)
-      forAll (Gen.chooseNum(0, len)) { n: Int =>
+      forAll(Gen.chooseNum(0, len)) { n: Int =>
         assertResult(len - n)(length(drop(l, n)))
       }
     }
@@ -223,7 +231,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
 
   it should "work" in {
     def testFoldLeft[A](l: List[A], expected: Int) = {
-      assertResult(expected)(foldLeft(l, 0)((acc,_) => acc + 1))
+      assertResult(expected)(foldLeft(l, 0)((acc, _) => acc + 1))
     }
 
     val tests = Table(
@@ -238,7 +246,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
 
   it should "be equivalent to foldRight" in {
     forAll("l") { l: List[Int] =>
-      assertResult(foldRight(l, 0)((_,acc) => acc + 1))(foldLeft(l, 0)((acc,_) => acc + 1))
+      assertResult(foldRight(l, 0)((_, acc) => acc + 1))(foldLeft(l, 0)((acc, _) => acc + 1))
     }
   }
 
@@ -259,8 +267,8 @@ class ListSpec extends FlatSpec with PropertyChecks {
     val tests = Table(
       ("l", "productViaFoldLeft(l)"),
       (Nil, 1d),
-      (List(1d,0d,2d), 0d),
-      (List(1d,2d,3d), 6d))
+      (List(1d, 0d, 2d), 0d),
+      (List(1d, 2d, 3d), 6d))
     forAll(tests)(testProductViaFoldLeft)
   }
 
@@ -281,7 +289,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
     val tests = Table(
       ("l", "reverse(l)"),
       (Nil, Nil),
-      (List(1,2,3), List(3,2,1)),
+      (List(1, 2, 3), List(3, 2, 1)),
       (List("a", "b", "c"), (List("c", "b", "a"))))
     forAll(tests)(testReverse)
   }
@@ -296,20 +304,20 @@ class ListSpec extends FlatSpec with PropertyChecks {
       ("l", "foldLeftViaFoldRight(l, 0)(_ + _)"),
       (Nil, 0),
       (List(1), 1),
-      (List(1,2,3), 6))
+      (List(1, 2, 3), 6))
     forAll(tests)(testSumFoldLeftViaFoldRight)
   }
 
   it should "work for append" in {
     def testAppendFoldLeftViaFoldRight[A](l1: List[A], l2: List[A], expected: List[A]) =
-      assertResult(expected)(foldLeftViaFoldRight(reverse(l1), l2)((t,h) => Cons(h,t)))
+      assertResult(expected)(foldLeftViaFoldRight(reverse(l1), l2)((t, h) => Cons(h, t)))
 
     val tests = Table(
       ("l1", "l2", "foldLeftViaFoldRight(reverse(l1), l2)((t,h) => Cons(h,t))"),
       (Nil, Nil, Nil),
       (List(1), Nil, List(1)),
       (Nil, List(1), List(1)),
-      (List(1,2), List(3,4), List(1,2,3,4)))
+      (List(1, 2), List(3, 4), List(1, 2, 3, 4)))
     forAll(tests)(testAppendFoldLeftViaFoldRight)
   }
 
@@ -323,20 +331,20 @@ class ListSpec extends FlatSpec with PropertyChecks {
       ("l", "foldRightViaFoldLeft(l, 0)(_ + _)"),
       (Nil, 0),
       (List(1), 1),
-      (List(1,2,3), 6))
+      (List(1, 2, 3), 6))
     forAll(tests)(testSumFoldRightViaFoldLeft)
   }
 
   it should "work for append" in {
     def testAppendFoldRightViaFoldLeft[A](l1: List[A], l2: List[A], expected: List[A]) =
-      assertResult(expected)(foldRightViaFoldLeft(l1, l2)((h,t) => Cons(h,t)))
+      assertResult(expected)(foldRightViaFoldLeft(l1, l2)((h, t) => Cons(h, t)))
 
     val tests = Table(
       ("l1", "l2", "foldRightViaFoldLeft(reverse(l1), l2)((h,t) => Cons(h,t))"),
       (Nil, Nil, Nil),
       (List(1), Nil, List(1)),
       (Nil, List(1), List(1)),
-      (List(1,2), List(3,4), List(1,2,3,4)))
+      (List(1, 2), List(3, 4), List(1, 2, 3, 4)))
     forAll(tests)(testAppendFoldRightViaFoldLeft)
   }
 
@@ -367,10 +375,10 @@ class ListSpec extends FlatSpec with PropertyChecks {
       (Nil, Nil),
       (List(Nil), Nil),
       (List(Nil, Nil), Nil),
-      (List(List(1,2,3)), List(1,2,3)),
-      (List(List(1),List(2),List(3)), List(1,2,3)),
+      (List(List(1, 2, 3)), List(1, 2, 3)),
+      (List(List(1), List(2), List(3)), List(1, 2, 3)),
       (List(List("a", "b", "c")), (List("a", "b", "c"))),
-      (List(List("a"),List("b"),List("c")), List("a","b","c")))
+      (List(List("a"), List("b"), List("c")), List("a", "b", "c")))
     forAll(tests)(testConcat)
   }
 
@@ -452,8 +460,9 @@ class ListSpec extends FlatSpec with PropertyChecks {
   }
 
   it should "be equivalent to Scala List function" in {
-    forAll(arbListTuple[Int].arbitrary) { case (l, sl) =>
-      assertResult(toList(sl.flatMap(x => SList(x + "x"))))(flatMap(l)(x => List(x + "x")))
+    forAll(arbListTuple[Int].arbitrary) {
+      case (l, sl) =>
+        assertResult(toList(sl.flatMap(x => SList(x + "x"))))(flatMap(l)(x => List(x + "x")))
     }
   }
 
@@ -481,7 +490,7 @@ class ListSpec extends FlatSpec with PropertyChecks {
       ("l1", "l2", "addPairwise(l1,l2)"),
       (Nil, Nil, Nil),
       (List(1, 2, 3), List(4, 5, 6), List(5, 7, 9)),
-      (List(1,2,3), List(4,5), List(5,7)))
+      (List(1, 2, 3), List(4, 5), List(5, 7)))
     forAll(tests)(testAddPairwise)
   }
 
@@ -489,13 +498,13 @@ class ListSpec extends FlatSpec with PropertyChecks {
 
   it should "work" in {
     def testZipWith(l1: List[Int], l2: List[String], expected: List[Int]) =
-      assertResult(expected)(zipWith(l1, l2){case (a,b) => a + b.toInt})
+      assertResult(expected)(zipWith(l1, l2) { case (a, b) => a + b.toInt })
 
     val tests = Table(
       ("l1", "l2", "zipWith(l1,l2)"),
       (Nil, Nil, Nil),
       (List(1, 2, 3), List("4", "5", "6"), List(5, 7, 9)),
-      (List(1,2,3), List("4","5"), List(5,7)))
+      (List(1, 2, 3), List("4", "5"), List(5, 7)))
     forAll(tests)(testZipWith)
   }
 
@@ -509,10 +518,10 @@ class ListSpec extends FlatSpec with PropertyChecks {
       ("l", "sub", "hasSubsequence(l, sub)"),
       (Nil, Nil, false),
       (List(1, 2, 3, 4), Nil, true),
-      (List(1, 2, 3, 4), List(1,2), true),
-      (List(1, 2, 3, 4), List(2,3), true),
+      (List(1, 2, 3, 4), List(1, 2), true),
+      (List(1, 2, 3, 4), List(2, 3), true),
       (List(1, 2, 3, 4), List(4), true),
-      (List(1, 2, 3, 4), List(3,2), false))
+      (List(1, 2, 3, 4), List(3, 2), false))
     forAll(tests)(testHasSubsequence)
   }
 

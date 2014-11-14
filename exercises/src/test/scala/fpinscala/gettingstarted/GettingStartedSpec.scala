@@ -100,13 +100,13 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
 
   it should "work for random Ints" in {
     forAll("x", "y") { (x: Int, y: Int) =>
-      assertResult(plus(x,y))(partial1(x, plus)(y))
+      assert(partial1(x, plus)(y) == plus(x,y))
     }
   }
 
   it should "work for random Strings" in {
     forAll("x", "y") { (x: String, y: String) =>
-      assertResult(append(x,y))(partial1(x, append)(y))
+      assert(partial1(x, append)(y) == append(x,y))
     }
   }
 

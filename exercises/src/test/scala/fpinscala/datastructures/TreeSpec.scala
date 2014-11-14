@@ -13,7 +13,7 @@ import Tree._
 class TreeSpec extends FlatSpec with PropertyChecks {
 
   private implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
-    val maxDepth = 10 // to prevent StackOverflows
+    val MaxDepth = 10 // to prevent StackOverflows
 
     def createLeaf: Gen[Tree[T]] = arbitrary[T] map (Leaf(_))
 //    def createBranch(depth: Int): Gen[Tree[T]] = {
@@ -36,7 +36,7 @@ class TreeSpec extends FlatSpec with PropertyChecks {
       } yield Branch(l, r)
     }
     def createTree(depth: Int): Gen[Tree[T]] =
-      if (depth >= maxDepth) createLeaf
+      if (depth >= MaxDepth) createLeaf
       else Gen.oneOf(createLeaf, createBranch(depth + 1))
 
     Arbitrary(createTree(0))
