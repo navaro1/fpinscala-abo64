@@ -42,7 +42,8 @@ more compact, same syntax as property-based tests
 ### [Property-based Testing](http://scalatest.org/user_guide/generator_driven_property_checks)
 * idea: let the test system generate itself random test data
 * specify only general "rules" or "laws" that our code should obey
-* law is of the form "for all x,y,z: f(SUT,x,y,z)"
+* a law is of the form "for all x1,x2,...: f(SUT,x1,x2,...)"
+  [Example: tail and head of List](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L61)
 * advantages: detect additional bugs, laws as a kind of specification/documentation
 
 ## [ScalaCheck](http://www.scalacheck.org/)

@@ -57,10 +57,10 @@ class ListSpec extends FlatSpec with PropertyChecks {
 //    forAll(tests)(testTail)
   }
 
-  it should "for all as: List[Int] ==> Cons(head(as), tail(as)) == as" in {
+  it should "result in the original list when Cons-ing w/ head" in {
     forAll("as") { as: List[Int] =>
       whenever(as != Nil) {
-        assertResult(Cons(head(as), tail(as)))(as)
+        assert(Cons(head(as), tail(as)) == as)
       }
     }
   }
