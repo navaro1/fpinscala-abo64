@@ -26,14 +26,14 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
     val tests = Table(
       ("n", "fib(n)"),
       (0, 0), (1, 1), (2, 1), (3, 2), (4, 3), (5, 5), (6, 8), (7, 13))
-    forAll(tests) { (x: Int, y: Int) =>
-      assertResult(y)(fib(x))
+    forAll(tests) { (x: Int, expected: Int) =>
+      assert(fib(x) == expected)
     }
   }
 
   it should "be the sum of the previous two fibs" in {
     forAll(Gen.chooseNum(2, 100) :| "n") { n: Int =>
-      assertResult(fib(n - 1) + fib(n - 2))(fib(n))
+      assert(fib(n - 1) + fib(n - 2) == fib(n))
     }
   }
 
@@ -45,8 +45,8 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
 
   it should "work" in {
 
-    def tableTest[A: Ordering](gt: (A, A) => Boolean)(x: Array[A], expected: Boolean): Unit = {
-      assertResult(expected)(isSorted(x, gt))
+    def testIsSorted[A: Ordering](gt: (A, A) => Boolean)(x: Array[A], expected: Boolean): Unit = {
+      assert(isSorted(x, gt) == expected)
     }
 
     val testsInt = Table(
@@ -57,7 +57,7 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
       (Array(0, 1), true),
       (Array(0, 1, 2), true),
       (Array(0, 2, 1), false))
-    forAll(testsInt)(tableTest(gt[Int]))
+    forAll(testsInt)(testIsSorted(gt[Int]))
 
     val testsString = Table(
       ("as", "y"),
@@ -67,7 +67,7 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
       (Array("0", "1"), true),
       (Array("0", "1", "2"), true),
       (Array("0", "2", "1"), false))
-    forAll(testsString)(tableTest(gt[String]))
+    forAll(testsString)(testIsSorted(gt[String]))
   }
 
   it should "work for random arrays" in {
@@ -76,8 +76,8 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
       val sortedArray = toSorted
       def isAlreadySorted = as.toSeq == sortedArray.toSeq
 
-      assertResult(isAlreadySorted)(isSorted(as, gt[Int]))
-      assertResult(true)(isSorted(sortedArray, gt[Int]))
+      assert(isSorted(as, gt[Int]) == isAlreadySorted)
+      assert(isSorted(sortedArray, gt[Int]) == true)
     }
   }
 
@@ -93,9 +93,9 @@ class GettingStartedSpec extends FlatSpec with PropertyChecks {
   val curriedAsTuple = asTuple.curried
 
   it should "work" in {
-    assertResult(4)(partial1(1, plus)(3))
-    assertResult("hello world")(partial1("hello ", append)("world"))
-    assertResult((42," is the answer"))(partial1(42, asTuple[Int,String])(" is the answer"))
+    assert(partial1(1, plus)(3) == 4)
+    assert(partial1("hello ", append)("world") == "hello world")
+    assert(partial1(42, asTuple[Int,String])(" is the answer") == (42," is the answer"))
   }
 
   it should "work for random Ints" in {

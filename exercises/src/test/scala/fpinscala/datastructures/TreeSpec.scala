@@ -13,23 +13,33 @@ import Tree._
 class TreeSpec extends FlatSpec with PropertyChecks {
 
   private implicit def arbTree[T](implicit ev: Arbitrary[T]): Arbitrary[Tree[T]] = {
-    val maxDepth = 10// to prevent StackOverflows
+    val maxDepth = 10 // to prevent StackOverflows
 
     def createLeaf: Gen[Tree[T]] = arbitrary[T] map (Leaf(_))
+//    def createBranch(depth: Int): Gen[Tree[T]] = {
+//      for {
+//        lIsLeaf <- arbitrary[Boolean]
+//        rIsLeaf <- arbitrary[Boolean]
+//        l <- createTree(lIsLeaf, depth)
+//        r <- createTree(rIsLeaf, depth)
+//      } yield Branch(l, r)
+//    }
+//    def createTree(isLeaf: Boolean, depth: Int): Gen[Tree[T]] =
+//      if (isLeaf || depth >= maxDepth) createLeaf else createBranch(depth + 1)
+//    Arbitrary {
+//      arbitrary[Boolean] flatMap { createTree(_, 0) }
+
     def createBranch(depth: Int): Gen[Tree[T]] = {
       for {
-        lIsLeaf <- arbitrary[Boolean]
-        rIsLeaf <- arbitrary[Boolean]
-        l <- createTree(lIsLeaf, depth)
-        r <- createTree(rIsLeaf, depth)
+        l <- createTree(depth)
+        r <- createTree(depth)
       } yield Branch(l, r)
     }
-    def createTree(isLeaf: Boolean, depth: Int): Gen[Tree[T]] =
-      if (isLeaf || depth >= maxDepth) createLeaf else createBranch(depth + 1)
+    def createTree(depth: Int): Gen[Tree[T]] =
+      if (depth >= maxDepth) createLeaf
+      else Gen.oneOf(createLeaf, createBranch(depth + 1))
 
-    Arbitrary {
-      arbitrary[Boolean] flatMap { createTree(_, 0) }
-    }
+    Arbitrary(createTree(0))
   }
 //  println(s"tree=${arbTree[Int].arbitrary.sample.get}")
 //  println(s"tree=${arbTree[Int].arbitrary.sample.get}")
