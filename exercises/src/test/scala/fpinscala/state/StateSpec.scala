@@ -298,7 +298,7 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
   behavior of "6.11 simulateMachine"
 
   it should "follow the rules" in {
-    val ruleTests = Table(
+    val candyDispenserRules = Table(
       ("rule",
          "inputs",          "Machine before",    "Machine after",       "expected result"),
       ("rule 1: insert coin into locked machine w/ candy -> unlock",
@@ -314,11 +314,9 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
       ("rule 4b: insert coin into machine w/o candy -> no effect",
           List[Input](Coin), Machine(true, 0, 0), Machine(true, 0, 0), (0,0))
     )
-    forAll(ruleTests) {
+    forAll(candyDispenserRules) {
       (rule: String, inputs: List[Input], machineBefore: Machine, machineAfter: Machine, expected: (Int,Int)) =>
-        assertResult((expected, machineAfter), rule) {
-          simulateMachine(inputs).run(machineBefore)
-        }
+        assert(simulateMachine(inputs).run(machineBefore) == (expected, machineAfter), rule)
     }
   }
 
@@ -337,7 +335,8 @@ class StateSpec extends FlatSpec with PropertyChecks with Matchers {
 
       case class State(locked: Boolean, candies: Int, coins: Int)
 
-      private def asState(machine: Machine) = State(machine.locked, machine.candies, machine.coins)
+      private def asState(machine: Machine) =
+        State(machine.locked, machine.candies, machine.coins)
 
       override def initialState = {
         currentMachine = Machine(true, 10, 0)

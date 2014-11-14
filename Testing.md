@@ -35,8 +35,9 @@ but never show their absence!"
 [Example: typical behavior](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L35)  
 [Example: exceptional behavior](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L39)
 * [table-driven property tests](http://scalatest.org/user_guide/table_driven_property_checks):  
-[Example: table-driven test](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L48)
-more compact, same syntax as property-based tests
+[Example: table-driven test](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L48)  
+[Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L301)  
+more compact (cf. TestNG's DataProvider), same syntax as generator-driven property tests
 * problem: sufficient coverage? all "representative" cases? how can we be sure?
 
 ### [Property-based Testing](http://scalatest.org/user_guide/generator_driven_property_checks)
@@ -66,3 +67,8 @@ Example: DataStore smoketestclient generators
 * create Prop with [forAll](https://github.com/rickynils/scalacheck/blob/master/src/main/scala/org/scalacheck/Prop.scala#L736)
 * combine Props with combinators  
 [Example: Prop && combinator](exercises/src/test/scala/fpinscala/testing/GenSpec.scala#L45)
+
+### Goodies
+* Shrinking: ScalaCheck tries to shrink the failure case to the smallest possible minimum
+* Stateful testing  
+[Example: Candy dispenser][Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L333)
