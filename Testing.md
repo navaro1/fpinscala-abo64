@@ -3,18 +3,19 @@
 ## Why tests?
 * find bugs
 * "prove" correctness (= meets expectations/specifications)
-* specify behavior (test first, TTD)
+* specify behavior ("test first", TTD)
 * document and communicate behavior
-* fixate behavior (e.g. before refactoring)
+* fixate behavior (e.g. before refactoring code)
+* acceptance criteria (e.g. for product management department)
 * avoid future regressions
 * explore unknown code
 * good feeling (sleep better)
 
 ## [ScalaTest](http://scalatest.org/)
 * DSL for "human readable" tests: [assertions](http://scalatest.org/user_guide/using_assertions),
-[matchers](http://scalatest.org/user_guide/using_matchers) and
+[matchers](http://scalatest.org/user_guide/using_matchers) and more
 * different [testing styles](http://scalatest.org/user_guide/selecting_a_style):  
-FlatSpec, FeatureSpec, FreeSpec, WordSpec, FunSuite, GivenWhenThen, WordSpec, ...
+FlatSpec, FeatureSpec, FreeSpec, WordSpec, FunSuite, GivenWhenThen, WordSpec, Eventually, BeforeAndAfter, ...
 * "If you don't enjoy shopping: ... use [FlatSpec](http://doc.scalatest.org/2.2.1/#org.scalatest.FlatSpec)
 for unit and integration testing
 and [FeatureSpec](http://doc.scalatest.org/2.2.1/#org.scalatest.FeatureSpec) for acceptance testing."  
@@ -23,10 +24,10 @@ and [FeatureSpec](http://doc.scalatest.org/2.2.1/#org.scalatest.FeatureSpec) for
 ## What is a test?
 * [System Under Test](http://en.wikipedia.org/wiki/System_under_test) (SUT):
 function, class, module, application, ...
-* input -> SUT -> expected vs. actual output
+* test: input -> SUT -> output -> check output against expectations
 * problem: how to find good (and sufficient!?) input data? when are we done?
-*  Edsger W. Dijkstra: "Program testing can be used to show the presence of bugs,
-but never show their absence!"
+* Edsger W. Dijkstra: "Program testing can be used to show the presence of bugs,
+but never show their absence!" -> no correctness or verification (at least for nontrivial SUTs)
 
 ## How can we test?
 ### Hand-made Testing
@@ -41,15 +42,15 @@ more compact (cf. TestNG's DataProvider), same syntax as generator-driven proper
 * problem: sufficient coverage? all "representative" cases? how can we be sure?
 
 ### [Property-based Testing](http://scalatest.org/user_guide/generator_driven_property_checks)
-* idea: let the test system generate itself random test data
+* idea: let the test system automagically generate random test data
 * specify only general "rules" or "laws" that our code should obey
 * a law is of the form "for all x1,x2,...: f(SUT,x1,x2,...)"  
   [Example: tail and head of List](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L61)
 * advantages: detect additional bugs, laws as a kind of specification/documentation
 
 ## [ScalaCheck](http://www.scalacheck.org/)
-* Gen(enerators) for test data
-* Prop(erties) for specifying "laws"
+* Gen: generate random test data
+* Prop: specify SUT properties ("laws", "rules", "invariants")
 * [User Guide](https://github.com/rickynils/scalacheck/wiki/User-Guide)
 
 ### [Gen](https://github.com/rickynils/scalacheck/blob/master/src/main/scala/org/scalacheck/Gen.scala)
@@ -61,7 +62,7 @@ more compact (cf. TestNG's DataProvider), same syntax as generator-driven proper
 [Example: recursive custom generators](exercises/src/test/scala/fpinscala/datastructures/TreeSpec.scala#L15)
 ([Arbitrary](https://github.com/rickynils/scalacheck/blob/master/src/main/scala/org/scalacheck/Arbitrary.scala)
 makes a generator be usable like standard Scala types)  
-Example: DataStore smoketestclient generators
+Real World Example: DataStore smoketestclient generators
 
 ### [Prop](https://github.com/rickynils/scalacheck/blob/master/src/main/scala/org/scalacheck/Prop.scala)
 * create Prop with [forAll](https://github.com/rickynils/scalacheck/blob/master/src/main/scala/org/scalacheck/Prop.scala#L736)
@@ -69,6 +70,6 @@ Example: DataStore smoketestclient generators
 [Example: Prop && combinator](exercises/src/test/scala/fpinscala/testing/GenSpec.scala#L45)
 
 ### Goodies
-* Shrinking: ScalaCheck tries to shrink the failure case to the smallest possible minimum
+* Shrinking: ScalaCheck tries to shrink the failure test data to the smallest possible size
 * Stateful testing  
-[Example: Candy dispenser][Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L333)
+[Example: Candy Dispenser][Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L333)
