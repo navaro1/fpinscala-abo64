@@ -28,25 +28,33 @@ function, class, module, application, ...
 * problem: how to find good (and sufficient!?) input data? when are we done?
 * Edsger W. Dijkstra: "Program testing can be used to show the presence of bugs,
 but never show their absence!" -> no correctness or verification (at least for nontrivial SUTs)
+* TL;DNR: quality of a test = quality of its input data!
+* How can we write good tests? = How do we find good input data?
 
-## How can we test?
-### Hand-made Testing
-* come up with possible input data: typical and corner cases; exceptional/"irregular" cases
+## Hand-made Testing
+* idea: come up with possible input data yourself
+* typical and corner cases; exceptional/"irregular" cases
 * ScalaTest: individual single tests  
 [Example: typical behavior](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L35)  
 [Example: exceptional behavior](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L39)
 * [table-driven property tests](http://scalatest.org/user_guide/table_driven_property_checks):  
 [Example: table-driven test](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L48)  
-[Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L301)  
-more compact (cf. TestNG's DataProvider), same syntax as generator-driven property tests
+[Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L301)
+* more compact than single tests (cf. TestNG's DataProvider)
+* syntax similar to generator-driven property tests
+* but usually contains both input and expected output data
 * problem: sufficient coverage? all "representative" cases? how can we be sure?
 
-### [Property-based Testing](http://scalatest.org/user_guide/generator_driven_property_checks)
+## [(Generator-driven) Property-based Testing](http://scalatest.org/user_guide/generator_driven_property_checks)
 * idea: let the test system automagically generate random test data
-* specify only general "rules" or "laws" that our code should obey
+* specify "Properties" on SUT: general "rules" or "laws" that our code should obey
 * a law is of the form "for all x1,x2,...: f(SUT,x1,x2,...)"  
   [Example: tail and head of List](exercises/src/test/scala/fpinscala/datastructures/ListSpec.scala#L61)
-* advantages: detect additional bugs, laws as a kind of specification/documentation
+
+### Advantages of Property-based Testing
+* impartial: no (subconscious?) urge to "protect" your own code from bug detection
+* potential to detect more bugs due to unforeseen input data
+* laws as a kind of additional specification/documentation
 
 ## [ScalaCheck](http://www.scalacheck.org/)
 * Gen: generate random test data
@@ -70,6 +78,6 @@ Real World Example: DataStore smoketestclient generators
 [Example: Prop && combinator](exercises/src/test/scala/fpinscala/testing/GenSpec.scala#L45)
 
 ### Goodies
-* Shrinking: ScalaCheck tries to shrink the failure test data to the smallest possible size
+* Shrinking: ScalaCheck tries to reduce the failure test data to the smallest possible size
 * Stateful testing  
 [Example: Candy Dispenser][Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L333)
