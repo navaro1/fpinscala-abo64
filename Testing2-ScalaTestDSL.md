@@ -10,4 +10,4 @@ for unit and integration testing
 and [FeatureSpec](http://doc.scalatest.org/2.2.1/#org.scalatest.FeatureSpec) for acceptance testing."  
 -> fair enough enough for me
 
-[<< Why Tests?](Testing1-WhyTests.md) [What is a Test? >>](Testing3-WhatIsATest.md)
+[<< Why Tests?](Testing1-WhyTests.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[What is a Test? >>](Testing3-WhatIsATest.md)

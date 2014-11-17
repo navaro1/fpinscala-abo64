@@ -18,4 +18,4 @@
 * sufficient coverage?
 * how can we be sure?
 
-[<< What is a Test?](Testing3-WhatIsATest.md) [Property-based Testing >>](Testing5-PropertyBasedTesting.md)
+[<< What is a Test?](Testing3-WhatIsATest.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Property-based Testing >>](Testing5-PropertyBasedTesting.md)

@@ -11,4 +11,4 @@ but never show their absence!" -> no correctness or verification (at least for n
 
 How can we write good tests? => How do we find good input data?
 
-[<< ScalaTest DSL](Testing2-ScalaTestDSL.md) [Hand-made Testing >>](Testing4-HandMadeTesting.md)
+[<< ScalaTest DSL](Testing2-ScalaTestDSL.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Hand-made Testing >>](Testing4-HandMadeTesting.md)

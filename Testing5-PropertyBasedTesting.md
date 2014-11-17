@@ -11,4 +11,4 @@
 * potential to detect more bugs due to unforeseen input data
 * laws as a kind of additional specification/documentation
 
-[<< Hand-made Testing](Testing4-HandMadeTesting.md) [ScalaCheck >>](Testing6-ScalaCheck.md)
+[<< Hand-made Testing](Testing4-HandMadeTesting.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ScalaCheck >>](Testing6-ScalaCheck.md)
