@@ -13,4 +13,4 @@
 
 A good testing framework should support all these goals well (especially a good feeling).
 
-[<< TOC](Testing0-TOC.md)          [ScalaTest DSL >>](Testing2-ScalaTestDSL.md)
+[<< TOC](Testing0-TOC.md)\t\t[ScalaTest DSL >>](Testing2-ScalaTestDSL.md)
