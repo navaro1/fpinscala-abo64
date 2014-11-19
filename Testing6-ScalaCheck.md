@@ -12,8 +12,8 @@
 * build your own generators with provided [Gen combinators](http://www.scalacheck.org/files/scalacheck_2.11-1.11.6-api/#org.scalacheck.Gen)  
 [Example: custom generators](exercises/src/test/scala/fpinscala/monoids/MonoidSpec.scala#L163)  
 [Example: recursive custom generators](exercises/src/test/scala/fpinscala/datastructures/TreeSpec.scala#L15)
-([Arbitrary](https://github.com/rickynils/scalacheck/blob/master/src/main/scala/org/scalacheck/Arbitrary.scala)
-makes a generator be usable like standard Scala types)  
+([Arbitrary](http://www.scalacheck.org/files/scalacheck_2.11-1.11.6-api/#org.scalacheck.Arbitrary)
+makes a generator usable like standard Scala types)  
 Real World Example: DataStore smoketestclient generators
 
 ### [Prop](http://www.scalacheck.org/files/scalacheck_2.11-1.11.6-api/#org.scalacheck.Prop)
