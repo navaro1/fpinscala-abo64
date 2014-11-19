@@ -3,7 +3,8 @@
 ## Why tests?
 * find bugs
 * "prove" correctness (= meets expectations/specifications)
-* specify behavior ("test first", TTD)
+* specify behavior ("test first",
+[TTD](http://en.wikipedia.org/wiki/Test-driven_development), [BDD](http://en.wikipedia.org/wiki/Behavior-driven_development))
 * document and communicate behavior
 * fixate behavior (e.g. before refactoring code)
 * acceptance criteria (e.g. for product management department)
