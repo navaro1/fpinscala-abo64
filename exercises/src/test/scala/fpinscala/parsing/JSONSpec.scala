@@ -6,15 +6,15 @@ import org.scalatest.prop.PropertyChecks
 import org.scalacheck.Arbitrary
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class JSONSpec extends FlatSpec with PropertyChecks with ParserTest[ParserTypes.Parser] {
+class JSONSpec extends FlatSpec with PropertyChecks with ParserTest[TestParserTypes.Parser] {
 
-//  override val P = TestParser
-//  import TestParserTypes._
-//  import TestParser._
+  override val P = TestParser
+  import TestParserTypes._
+  import TestParser._
 
-  override val P = ParserImpl
-  import ParserTypes._
-  import ParserImpl._
+//  override val P = ParserImpl
+//  import ParserTypes._
+//  import ParserImpl._
 
   val json: Parser[JSON] = JSON.jsonParser(P)
   private def parse(jsonTxt: String): Either[ParseError,JSON] =
