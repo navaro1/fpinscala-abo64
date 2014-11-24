@@ -95,13 +95,14 @@ class JSONSpec extends FlatSpec with PropertyChecks with ParserTest[TestParserTy
       ("""{ true }"""),
       (""" "a" : true }"""),
       ("""{ "a" : true """),
+      ("""{ "a" , true }"""),
       ("""{ "a" : true] }"""),
       ("""{ "a" : [true }"""),
       ("""{ "a" :  "b" : true } }"""),
       ("""{ "a" : { "b" : true } """)
     )
     forAll(invalidJsonTests) { invalidJson =>
-      assert(parse(invalidJson).isInstanceOf[Left[ParseError,String]])
+      assert(parse(invalidJson).isLeft)
     }
   }
 
