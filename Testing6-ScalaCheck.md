@@ -24,6 +24,6 @@ Real World Example: DataStore smoketestclient generators
 ### Goodies
 * Shrinking: ScalaCheck tries to reduce the failure test data to the smallest possible size
 * Stateful testing  
-[Example: Candy Dispenser][Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L333)
+[Example: Candy Dispenser rules](exercises/src/test/scala/fpinscala/state/StateSpec.scala#L333)
 
 [<< Property-based Testing](Testing5-PropertyBasedTesting.md)
