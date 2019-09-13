@@ -306,39 +306,18 @@ object IO3 {
                                f: A => Free[F, B]) extends Free[F, B]
 
   // Exercise 1: Implement the free monad
-  def freeMonad[F[_]]: Monad[({type f[a] = Free[F,a]})#f] =
-    new Monad[({type f[a] = Free[F,a]})#f] {
-      def unit[A](a: => A) = Return(a)
-      def flatMap[A,B](fa: Free[F, A])(f: A => Free[F, B]) = fa flatMap f
-    }
+  def freeMonad[F[_]]: Monad[({type f[a] = Free[F,a]})#f] = ???
 
   // Exercise 2: Implement a specialized `Function0` interpreter.
-  @annotation.tailrec
-  def runTrampoline[A](a: Free[Function0,A]): A = a match {
-    case Return(a) => a
-    case Suspend(r) => r()
-    case FlatMap(s,f) => s match {
-      case Return(a) => runTrampoline { f(a) }
-      case Suspend(s) => runTrampoline { f(s()) }
-      case FlatMap(s1,f1) => runTrampoline { s1 flatMap { a => f1(a) flatMap f } }
-    }
-  }
+  // @annotation.tailrec
+  def runTrampoline[A](a: Free[Function0,A]): A = ???
 
   // Exercise 3: Implement a `Free` interpreter which works for any `Monad`
-  def run[F[_],A](a: Free[F,A])(implicit F: Monad[F]): F[A] = step(a) match {
-    case Return(a) => F.unit(a)
-    case Suspend(r) => r
-    case FlatMap(Suspend(r), f) => F.flatMap(r)(a => run(f(a)))
-    case _ => sys.error("Impossible, since `step` eliminates these cases")
-  }
+  def run[F[_],A](a: Free[F,A])(implicit F: Monad[F]): F[A] = ???
 
   // return either a `Suspend`, a `Return`, or a right-associated `FlatMap`
-  @annotation.tailrec
-  def step[F[_],A](a: Free[F,A]): Free[F,A] = a match {
-    case FlatMap(FlatMap(x, f), g) => step(x flatMap (a => f(a) flatMap g))
-    case FlatMap(Return(x), f) => step(f(x))
-    case _ => a
-  }
+  // @annotation.tailrec
+  def step[F[_],A](a: Free[F,A]): Free[F,A] = ???
 
   /*
   The type constructor `F` lets us control the set of external requests our
@@ -445,18 +424,9 @@ object IO3 {
   // Exercise 4 (optional, hard): Implement `runConsole` using `runFree`,
   // without going through `Par`. Hint: define `translate` using `runFree`.
 
-  def translate[F[_],G[_],A](f: Free[F,A])(fg: F ~> G): Free[G,A] = {
-    type FreeG[A] = Free[G,A]
-    val t = new (F ~> FreeG) {
-      def apply[A](a: F[A]): Free[G,A] = Suspend { fg(a) }
-    }
-    runFree(f)(t)(freeMonad[G])
-  }
+  def translate[F[_],G[_],A](f: Free[F,A])(fg: F ~> G): Free[G,A] = ???
 
-  def runConsole[A](a: Free[Console,A]): A =
-    runTrampoline { translate(a)(new (Console ~> Function0) {
-      def apply[A](c: Console[A]) = c.toThunk
-    })}
+  def runConsole[A](a: Free[Console,A]): A = ???
 
   /*
   There is nothing about `Free[Console,A]` that requires we interpret

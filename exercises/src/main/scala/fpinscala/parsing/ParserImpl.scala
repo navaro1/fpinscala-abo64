@@ -35,38 +35,16 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
   import ParserTypes._
 
   override def run[A](p: Parser[A])(input: String): Either[ParseError,A] = // 149, 163, 170
-    p(Location(input)) match {
-      case Success(a, _) => Right(a)
-      case Failure(e, _) => Left(e)
-    }
+    ???
 
-  private def input(loc: Location): String = loc.input.substring(loc.offset)
-
-  override implicit def string(s: String): Parser[String] = { // 149, 167
-    def headMatches(s1: String, s2: String): Boolean =
-      s1.headOption.flatMap(c1 => s2.headOption.map(c2 => c1 == c2)).getOrElse(true)
-
-    loc =>
-      if (input(loc).startsWith(s)) Success(s, s.length)
-      else Failure(loc.toError(s"""string: "${input(loc)}" does not start with "$s""""),
-          headMatches(input(loc), s))
-  }
+  override implicit def string(s: String): Parser[String] = // 149, 167
+    ???
 
   override implicit def regex(r: Regex): Parser[String] = // 157, 167
-    loc =>
-      r.findPrefixOf(input(loc)) match {
-        case Some(prefix) => Success(prefix, prefix.length)
-        case _ => Failure(loc.toError(s"""regex: "${input(loc)}" does not start with regex "$r""""), false)
-      }
+    ???
 
-  override def slice[A](p: Parser[A]): Parser[String] = { // 154, 167
-    def slice(loc: Location, n: Int) = loc.input.substring(loc.offset, loc.offset + n)
-
-    loc => p(loc) match {
-      case Success(_, n) => Success(slice(loc, n), n)
-      case f@Failure(_,_) => f
-    }
-  }
+  override def slice[A](p: Parser[A]): Parser[String] = // 154, 167
+    ???
 
   override def label[A](msg: String)(p: Parser[A]): Parser[A] = // 161
     s => p(s).mapError(_.label(msg)) // 168
@@ -92,5 +70,6 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
     }
 
   override def succeed[A](a: A): Parser[A] = // 153, 167
-    _ => Success(a, 0)
+    ???
+
 }

@@ -25,7 +25,7 @@ object Functor {
   }
 }
 
-trait Monad[M[_]] extends Functor[M] { self =>
+trait Monad[M[_]] extends Functor[M] {
   def unit[A](a: => A): M[A]
   def flatMap[A,B](ma: M[A])(f: A => M[B]): M[B]
 
@@ -34,59 +34,28 @@ trait Monad[M[_]] extends Functor[M] { self =>
   def map2[A,B,C](ma: M[A], mb: M[B])(f: (A, B) => C): M[C] =
     flatMap(ma)(a => map(mb)(b => f(a, b)))
 
-  def sequence[A](lma: List[M[A]]): M[List[A]] =
-    lma.foldRight(unit(List[A]()))((ma, mla) => map2(ma, mla)(_ :: _))
+  def sequence[A](lma: List[M[A]]): M[List[A]] = ???
 
-  def traverse[A,B](la: List[A])(f: A => M[B]): M[List[B]] =
-    la.foldRight(unit(List[B]()))((a, mlb) => map2(f(a), mlb)(_ :: _))
+  def traverse[A,B](la: List[A])(f: A => M[B]): M[List[B]] = ???
 
-  def replicateM[A](n: Int, ma: M[A]): M[List[A]] =
-//    sequence(List.fill(n)(ma))
-//    if (n <= 0) unit(List[A]()) else map2(ma, replicateM(n - 1, ma))(_ :: _)
-    sequence(List.fill(n)(ma))
+  def replicateM[A](n: Int, ma: M[A]): M[List[A]] = ???
 
-  def product[A,B](ma: M[A], mb: M[B]): M[(A, B)] = map2(ma, mb)((_, _))
+  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = ???
 
-//  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = {
-//    map2(unit(la), sequence(la.map(f))) { (as,bs) =>
-//      (as zip bs) filter(_._2) map(_._1)
-//    }
-//  }
+  def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] = ???
 
-  // translated from http://hackage.haskell.org/package/base-4.7.0.1/docs/src/Control-Monad.html
-  def filterM[A](la: List[A])(f: A => M[Boolean]): M[List[A]] = la match {
-      case Nil => unit(Nil)
-      case x :: xs => for {
-        flg <- f(x)
-        ys <- filterM(xs)(f)
-      } yield if (flg) x::ys else ys
-    }
-
-  def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] =
-    (a: A) => flatMap(f(a))(g)
-
-  def composeViaJoinAndMap[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] =
-    (a: A) => join(map(f(a))(g))
+  def composeViaJoinAndMap[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] = ???
 
   // Implement in terms of `compose`:
-  def flatMapViaCompose[A,B](ma: M[A])(f: A => M[B]): M[B] =
-    // any dummy input value will do here
-//    compose((_:Unit) => ma, f)(())
-    compose((_:Boolean) => ma, f)(true)
+  def flatMapViaCompose[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
 
-  def flatMapViaJoinAndMap[A,B](ma: M[A])(f: A => M[B]): M[B] =
-    join(map(ma)(f))
+  def join[A](mma: M[M[A]]): M[A] = ???
 
-  def join[A](mma: M[M[A]]): M[A] =
-    mma.flatMap(ma => ma)
-
-  implicit def toMonadOps[A](ma: M[A]): MonadOps[A] = MonadOps[A](ma)
-  case class MonadOps[A](ma: M[A]) {
-    def unit(a: => A) = self.unit(a)
-    def flatMap[B](f: A => M[B]) = self.flatMap(ma)(f)
-    def map[B](f: A => B) = self.map(ma)(f)
-  }
+  // Implement in terms of `join`:
+  def flatMapViaJoinAndMap[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
 }
+
+case class Reader[R, A](run: R => A)
 
 object Monad {
   val genMonad = new Monad[Gen] {
@@ -95,77 +64,35 @@ object Monad {
       ma flatMap f
   }
 
-  val parMonad: Monad[Par] = new Monad[Par] {
-    override def unit[A](a: => A): Par[A] = Par.unit(a)
-    override def flatMap[A,B](ma: Par[A])(f: A => Par[B]): Par[B] =
-//      ma flatMap f
-      Par.flatMap(ma)(f)
-  }
+  lazy val parMonad: Monad[Par] = ???
 
-  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = new Monad[P] {
-    import p._
-    override def unit[A](a: => A): P[A] = p.succeed(a)
-    override def flatMap[A,B](ma: P[A])(f: A => P[B]): P[B] =
-//      ma flatMap(f)
-      p.flatMap(ma)(f)
-  }
+  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = ???
 
-  val optionMonad: Monad[Option] = new Monad[Option] {
-    override def unit[A](a: => A): Option[A] = Option(a)
-    override def flatMap[A,B](ma: Option[A])(f: A => Option[B]): Option[B] =
-      ma flatMap f
-  }
+  lazy val optionMonad: Monad[Option] = ???
 
-  val streamMonad: Monad[Stream] = new Monad[Stream] {
-    override def unit[A](a: => A): Stream[A] = Stream(a)
-    override def flatMap[A,B](ma: Stream[A])(f: A => Stream[B]): Stream[B] =
-      ma flatMap f
-  }
+  lazy val streamMonad: Monad[Stream] = ???
 
-  val listMonad: Monad[List] = new Monad[List] {
-    override def unit[A](a: => A): List[A] = List(a)
-    override def flatMap[A,B](ma: List[A])(f: A => List[B]): List[B] =
-      ma flatMap f
-  }
+  lazy val listMonad: Monad[List] = ???
 
-  def stateMonad[S] = new Monad[({type lambda[x] = State[S, x]})#lambda] {
-    def unit[A](a: => A): State[S, A] = State(s => (a, s))
-    override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
-      st flatMap f
-  }
+  def stateMonad[S]: Monad[({type lambda[x] = State[S, x]})#lambda] = ???
 
-  val idMonad: Monad[Id] = new Monad[Id] {
-    def unit[A](a: => A) = Id(a)
-    override def flatMap[A,B](ida: Id[A])(f: A => Id[B]): Id[B] = ida flatMap f
-  }
+  lazy val idMonad: Monad[Id] = ???
 
   def getState[S]: State[S,S] = State(s => (s,s))
   def setState[S](s: S): State[S,Unit] = State(_ => ((),s))
 
-  val F = stateMonad[Int]
-
-  def zipWithIndex[A](as: List[A]): List[(Int,A)] =
-    as.foldLeft(F.unit(List[(Int, A)]()))((acc,a) => for {
-      xs <- acc
-      n  <- getState
-      _  <- setState(n + 1)
-    } yield (n, a) :: xs).run(0)._1.reverse
-
-  def readerMonad[R] = new Monad[({type f[x] = Reader[R,x]})#f] {
-    def unit[A](a: => A): Reader[R,A] = Reader(_ => a)
-    override def flatMap[A,B](st: Reader[R,A])(f: A => Reader[R,B]): Reader[R,B] =
-      Reader(r => f(st.run(r)).run(r))
-  }
+  def readerMonad[R]: Monad[({type f[x] = Reader[R,x]})#f] = ???
 }
 
 case class Id[A](value: A) {
-  def map[B](f: A => B): Id[B] = Id(f(value))
-  def flatMap[B](f: A => Id[B]): Id[B] = f(value)
+  def map[B](f: A => B): Id[B] = ???
+  def flatMap[B](f: A => Id[B]): Id[B] = ???
 }
 
-case class Reader[R, A](run: R => A)
-
 object Reader {
-  def ask[R]: Reader[R, R] = Reader(r => r)
+  def readerMonad[R] = new Monad[({type f[x] = Reader[R,x]})#f] {
+    def unit[A](a: => A): Reader[R,A] = ???
+    override def flatMap[A,B](st: Reader[R,A])(f: A => Reader[R,B]): Reader[R,B] = ???
+  }
 }
 
