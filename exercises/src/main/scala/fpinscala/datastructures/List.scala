@@ -136,5 +136,16 @@ object List { // `List` companion object. Contains functions for creating and wo
     case (Cons(x, xs), Cons(y, ys)) => Cons(f(x, y), zipWith(xs, ys)(f))
   }
 
-  def hasSubsequence[A](l: List[A], sub: List[A]): Boolean = sys.error("todo")
+ def hasSubsequence[A](l: List[A], sub: List[A]): Boolean = {
+   @tailrec
+    def loop(list: List[A], sublist: List[A]): Boolean = (list, sublist) match {
+      case (Cons(hl, Nil), Cons(hs, Nil)) => hl == hs
+      case (Nil, Nil) => false
+      case (_, Nil) => true
+      case (Nil, _) => false
+      case (Cons(hl, tl), Cons(hs, ts)) if hl == hs => loop(tl, ts)
+      case (Cons(_, tl), _) => loop(tl, sub)
+    }
+    loop(l, sub)
+  }
 }
