@@ -132,7 +132,7 @@ object Examples {
 
   private def kestrel[A](x: A)(f: A => Unit): A = ???
 
-  def parCountWords(paragraphs: List[String]): Par[Int] =
+  def parCountWords(paragraphs: List[String]): Par[Int] = ???
 
 
 }
