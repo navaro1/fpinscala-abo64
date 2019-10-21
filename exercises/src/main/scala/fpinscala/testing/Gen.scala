@@ -35,22 +35,30 @@ trait Prop1 {
     }
 }
 
-case class Prop(run: (TestCases, RNG) => Result) {
-  def &&(p: Prop): Prop = ???
+case class Prop(run: (MaxSize, TestCases, RNG) => Result) {
+  def &&(p: Prop): Prop = Prop {
+    (ms, tc, rng) =>
+      run(ms, tc, rng) match {
+        case Prop.Passed => p.run(ms, tc, rng)
+        case falsified => falsified
+      }
+  }
 
-  def ||(p: Prop): Prop = ???
+  def ||(p: Prop): Prop = Prop {
+    (ms, tc, rng) =>
+      run(ms, tc, rng) match {
+        case Prop.Passed => Prop.Passed
+        case Falsified(failure, _) => p.tag(failure).run(ms, tc, rng)
+      }
+  }
 
-  def tag(msg: String) = Prop { (tc, rng) =>
-    run(tc, rng) match {
+  def tag(msg: String) = Prop { (max, tc, rng) =>
+    run(max, tc, rng) match {
       case Falsified(e, c) => Falsified(msg + "\n" + e, c)
       case x => x
     }
   }
 
-  // ABO
-  def run(maxSize: Int = 100,
-          testCases: Int = 100,
-          rng: RNG = RNG.Simple(System.currentTimeMillis)): Result = ???
 }
 
 object Prop {
@@ -74,16 +82,15 @@ object Prop {
 
   def forAll[A](gen: Gen[A])(f: A => Boolean): Prop = ???
 
-  // ABO
-  def run(p: Prop,
-          maxSize: Int = 100,
-          testCases: Int = 100,
-          rng: RNG = RNG.Simple(System.currentTimeMillis)): Unit = ???
+  def apply(f: (TestCases,RNG) => Result): Prop =
+    Prop { (_,n,rng) => f(n,rng) }
+
 }
 
 object ListProps {
   // Exercise 8.14: Prop for List.sorted
-  lazy val intListGen: Gen[List[Int]] = ???
+  lazy val intListGen: Gen[List[Int]] =
+    Gen.choose(-10, 11).listOfN(Gen.choose(0, 101))
   lazy val sortedProp: Prop =
     Prop.forAll(intListGen) { l: List[Int] =>
       ???
@@ -147,9 +154,11 @@ object Gen {
     double.flatMap(d => if (d < p1) g1 else g2)
   }
 
-  def listOf[A](g: Gen[A]): SGen[List[A]] = ???
+  def listOf[A](g: Gen[A]): SGen[List[A]] =
+    SGen(g.listOfN)
 
-  def listOf1[A](g: Gen[A]): SGen[List[A]] = ???
+  def listOf1[A](g: Gen[A]): SGen[List[A]] =
+    SGen(n => g.listOfN(n max 1))
 
   lazy val parInt: Gen[Par[Int]] = ???
 }
@@ -165,7 +174,8 @@ case class Gen[+A](sample: State[RNG, A]) {
   def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] =
     Gen(sample.map2(g.sample)(f))
 
-  def listOfN(size: Int): Gen[List[A]] = ???
+  def listOfN(size: Int): Gen[List[A]] =
+    Gen.listOfN(size, this)
 
   def listOfN(size: Gen[Int]): Gen[List[A]] =
     size flatMap (Gen.listOfN(_, this))
@@ -177,15 +187,21 @@ case class Gen[+A](sample: State[RNG, A]) {
   def **[B](g: Gen[B]): Gen[(A, B)] =
     (this map2 g) ((_, _))
 
-  def unsized: SGen[A] = ???
+  def unsized: SGen[A] = SGen(_ => this)
 }
 
 case class SGen[+A](forSize: Int => Gen[A]) {
-  def apply(n: Int): Gen[A] = ???
+  def apply(n: Int): Gen[A] = forSize(n)
 
-  def map[B](f: A => B): SGen[B] = ???
+  def map[B](f: A => B): SGen[B] = SGen {
+    size => forSize(size).map(f)
+  }
 
-  def flatMap[B](f: A => SGen[B]): SGen[B] = ???
+  def flatMap[B](f: A => Gen[B]): SGen[B] = SGen(
+    forSize.andThen(_.flatMap(f))
+  )
 
-  def **[B](s2: SGen[B]): SGen[(A, B)] = ???
+  def **[B](s2: SGen[B]): SGen[(A, B)] = SGen(
+    forSize => apply(forSize) ** s2(forSize)
+  )
 }
