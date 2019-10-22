@@ -17,13 +17,14 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
     ParserOps(f(a))
 
   def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]] = // 150, 155
-    ???
+    if (n < 1) succeed(List())
+    else map2(p,listOfN(n - 1, p))(_ :: _)
 
   def many[A](p: Parser[A]): Parser[List[A]] = // 152, 155
-    ???
+    map2(p, many(p))(_ :: _) or succeed(List())
 
   def map[A,B](a: Parser[A])(f: A => B): Parser[B] = // 152
-    ???
+    flatMap(a)(e => succeed(f(e))) // f andThen succeed
 
   def char(c: Char): Parser[Char] = // 153
     string(c.toString) map ((_: String).charAt(0))
@@ -33,13 +34,14 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
   def slice[A](p: Parser[A]): Parser[String] // 154
 
   def many1[A](p: Parser[A]): Parser[List[A]] = // 154
-    ???
+    map2(p, many(p))(_ :: _)
 
   def product[A,B](p: Parser[A], p2: => Parser[B]): Parser[(A,B)] = // 154, 156, 157
-    ???
+    p.flatMap(a => p2.map((b: B) => (a, b)))
+
 
   def map2[A,B,C](p: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] = // 157
-    ???
+    p.flatMap(a => p2.map((b: B) => f(a, b)))
 
   def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B] // 157
 
@@ -67,10 +69,10 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 
   object Exercises {
     def map2ViaProduct[A,B,C](p: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] = // 154
-      ???
+      p ** p2 map f.tupled
 
     def csListOfN[A](p: Parser[A]): Parser[List[A]] = // 157
-      ???
+      regex("\\d+".r).flatMap(n => listOfN(n.toInt, p))
   }
 }
 
