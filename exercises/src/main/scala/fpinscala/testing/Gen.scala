@@ -188,7 +188,8 @@ object Gen {
           .getOrElse((Nil, state))
       }))
 
-  def stringN(n: Int): Gen[String] = ???
+  def stringN(n: Int): Gen[String] =
+    listOfN(n, choose(0,127)).map((_:List[Int]).map(_.toChar).mkString)
 
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
     boolean.flatMap(if (_) g1 else g2)
