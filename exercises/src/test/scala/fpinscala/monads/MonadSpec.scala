@@ -133,7 +133,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
         ParserImpl.run(p1)("") == ParserImpl.run(p1)("")
       })
 
-  val idMonadTest = MonadTest(idMonad)
+  lazy val idMonadTest = MonadTest(idMonad)
 
   behavior of "11.1.1 parMonad"
   it should "work" in  parMonadTest.testMonad
@@ -321,7 +321,7 @@ class MonadSpec extends FlatSpec with PropertyChecks with BeforeAndAfterEach {
   behavior of "11.17 idMonad"
   it should "work" in idMonadTest.testMonad
 
-  val intStateMonad = stateMonad[T]
+  lazy val intStateMonad = stateMonad[T]
 
   behavior of "11.18.1 stateMonad.replicateM"
   it should "work" in {

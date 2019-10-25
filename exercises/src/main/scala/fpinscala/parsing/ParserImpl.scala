@@ -35,7 +35,12 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
   import ParserTypes._
 
   override def run[A](p: Parser[A])(input: String): Either[ParseError,A] = // 149, 163, 170
-    ???
+    p(Location(input)) match {
+      case Success(a, _) => Right(a)
+      case Failure(e, _) => Left(e)
+    }
+
+  private def input(loc: Location): String = loc.input.substring(loc.offset)
 
   override implicit def string(s: String): Parser[String] = // 149, 167
     ???
@@ -70,6 +75,6 @@ object ParserImpl extends Parsers[ParserTypes.Parser] {
     }
 
   override def succeed[A](a: A): Parser[A] = // 153, 167
-    ???
+    _ => Success(a, 0)
 
 }
