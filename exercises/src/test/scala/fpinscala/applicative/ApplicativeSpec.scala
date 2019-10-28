@@ -443,7 +443,9 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       ma map f
     override def flatMap[A,B](ma: List[A])(f: A => List[B]): List[B] =
       ma flatMap f
-  }
+
+      override def map2[A, B, C](fa: List[A], fb: List[B])(f: (A, B) => C): List[C] = ???
+    }
 
   private def optionMonad: Monad[Option] =
     new Monad[Option] {
@@ -452,7 +454,9 @@ class ApplicativeSpec extends FlatSpec with PropertyChecks {
       ma map f
     override def flatMap[A,B](ma: Option[A])(f: A => Option[B]): Option[B] =
       ma flatMap f
-  }
+
+      override def map2[A, B, C](fa: Option[A], fb: Option[B])(f: (A, B) => C): Option[C] = ???
+    }
 
   it should "work for listTraverse" in {
     implicit val lm = listMonad
