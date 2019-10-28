@@ -114,7 +114,7 @@ case class State[S,+A](run: S => (A, S)) {
         (f(a), next)
       }
     )
-  def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
+   def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
     State(
       (state: S) => {
         val (a, next1) = run(state)
