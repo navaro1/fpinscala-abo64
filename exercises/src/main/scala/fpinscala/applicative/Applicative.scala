@@ -49,7 +49,11 @@ trait Applicative[F[_]] extends Functor[F] {
 
   def factor[A, B](fa: F[A], fb: F[A]): F[(A, B)] = ???
 
-  def product[G[_]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = ???
+  def product[G[_]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = new Applicative[({
+  type f[x] = (F[x], G[x])
+})#f] {
+    override def unit[A](a: => A): (F[A], G[A]) =
+  }
 
   def compose[G[_]](G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] = ???
 
@@ -71,7 +75,22 @@ trait Monad[F[_]] extends Applicative[F] {
 }
 
 object Monad {
-  def eitherMonad[E]: Monad[({type f[x] = Either[E, x]})#f] = ???
+  def eitherMonad[E]: Monad[({type f[x] = Either[E, x]})#f] = new Monad[({
+    type f[x] = Either[E, x]
+  })#f] {
+    override def unit[A](a: => A): Either[E, A] = Right(a)
+
+
+    override def join[A](mma: Either[E, Either[E, A]]): Either[E, A] = mma match {
+      case Left(e) => Left(e)
+      case Right(ma) => ma
+    }
+
+    override def map[A, B](ma: Either[E, A])(f: A => B): Either[E, B] = ma match {
+      case Left(e) => Left(e)
+      case Right(a) => Right(f(a))
+    }
+  }
 
   def stateMonad[S] = new Monad[({type f[x] = State[S, x]})#f] {
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
@@ -127,7 +146,20 @@ object Applicative {
       a zip b map f.tupled
   }
 
-  def validationApplicative[E]: Applicative[({type f[x] = Validation[E, x]})#f] = ???
+  def validationApplicative[E]: Applicative[({type f[x] = Validation[E, x]})#f] = new Applicative[({
+    type f[x] = Validation[E, x]
+  })#f] {
+    override def unit[A](a: => A): Validation[E, A] = Success(a)
+
+    override def map2[A, B, C](fa: Validation[E, A], fb: Validation[E, B])(f: (A, B) => C): Validation[E, C] = (fa, fb) match {
+      case (Success(a), Success(b)) => Success(f(a, b))
+      case (Success(_), Failure(head, tail)) => Failure(head, tail)
+      case (Failure(head, tail), Success(_)) => Failure(head, tail)
+      case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ Vector(h2) ++ t2)
+    }
+
+
+  }
 
   type Const[A, B] = A
 
